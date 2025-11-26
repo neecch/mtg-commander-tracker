@@ -429,6 +429,7 @@ export default function CommanderApp() {
   };
 
   const exitMatch = () => {
+    // Kept confirm here for Win Screen as user only complained about library/menu
     if (confirm('Sicuro di voler uscire senza salvare?')) {
       setView('SETUP');
       setWinner(null);
@@ -636,7 +637,7 @@ export default function CommanderApp() {
       case 2: return 'grid-cols-2'; 
       case 3: return 'grid-cols-3'; 
       case 4: return 'grid-cols-2 grid-rows-2'; 
-      case 5: return 'grid-cols-3 grid-rows-2';
+      case 5: return 'grid-cols-3 grid-rows-2'; // 3 columns to allow the span
       case 6: return 'grid-cols-3 grid-rows-2';
       default: return 'grid-cols-2';
     }
@@ -644,7 +645,8 @@ export default function CommanderApp() {
 
   const getCellSpanClass = (index, totalPlayers) => {
     if (totalPlayers === 3 && index === 2) return '';
-    if (totalPlayers === 5 && index === 4) return 'col-span-3 md:col-span-1';
+    // CHANGE: For 5 players, index 2 (which corresponds to the 3rd player) spans 2 rows
+    if (totalPlayers === 5 && index === 2) return 'row-span-2';
     return '';
   };
 
@@ -684,10 +686,10 @@ export default function CommanderApp() {
           </div>
           <div className="flex gap-2">
               <Button variant="ghost" onClick={() => { setStatsPlayerId(null); setHistoryListOpen(true); }} className="p-2">
-                  <ScrollText size={20} className="text-slate-400 hover:text-indigo-400" />
+                  <ScrollText size={24} className="text-slate-400 hover:text-indigo-400" />
               </Button>
               <Button variant="ghost" onClick={() => setLibraryOpen(true)} className="p-2">
-                  <Database size={20} className="text-indigo-400" />
+                  <Database size={24} className="text-indigo-400" />
               </Button>
           </div>
         </div>
@@ -950,6 +952,23 @@ export default function CommanderApp() {
           let displayPlayers = [...gameState.players];
           if (displayPlayers.length === 4) {
             [displayPlayers[2], displayPlayers[3]] = [displayPlayers[3], displayPlayers[2]];
+          }
+          // CHANGE: Reordering for 5 players to achieve visual clockwise circle
+          // Current array index flow: 0->1->2->3->4
+          // Visual grid flow with 3 cols:
+          // Row 1: Col1(0) Col2(1) Col3(2)
+          // Row 2: Col1(3) Col2(4)
+          // Visual Clockwise desired: P0(TL) -> P1(TM) -> P2(R-Tall) -> P3(BM) -> P4(BL) -> P0...
+          // Grid positions:
+          // P0 -> 0 (TL)
+          // P1 -> 1 (TM)
+          // P2 -> 2 (R - Tall)
+          // P3 -> 4 (BM) (Grid item index 4 lands in col 2 row 2)
+          // P4 -> 3 (BL) (Grid item index 3 lands in col 1 row 2)
+          // So we need the array to be: [P0, P1, P2, P4, P3]
+          if (displayPlayers.length === 5) {
+             // Swap index 3 and 4 so that P3 goes to last slot (BM) and P4 goes to second-to-last slot (BL)
+             [displayPlayers[3], displayPlayers[4]] = [displayPlayers[4], displayPlayers[3]];
           }
 
           return displayPlayers.map((player, idx) => {
