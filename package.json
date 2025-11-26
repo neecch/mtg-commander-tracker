@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
+"scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run permissions && vite build", 
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "permissions": "chmod +x node_modules/.bin/vite" 
   },
   "dependencies": {
     "lucide-react": "^0.309.0",
