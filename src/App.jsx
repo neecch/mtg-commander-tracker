@@ -650,9 +650,35 @@ export default function CommanderApp() {
     return '';
   };
 
+  // NEW: Get rotation class based on grid index and total players
+  const getRotationClass = (index, totalPlayers) => {
+    switch(totalPlayers) {
+      case 2:
+        if (index === 0) return 'rotate-90';
+        if (index === 1) return '-rotate-90';
+        return '';
+      case 3:
+        if (index === 0) return 'rotate-90';
+        if (index === 1) return 'rotate-180';
+        if (index === 2) return '-rotate-90';
+        return '';
+      case 4:
+        if (index === 0 || index === 1) return 'rotate-180';
+        return ''; // 0 deg
+      case 5:
+        if (index === 0 || index === 1) return 'rotate-180';
+        if (index === 2) return '-rotate-90'; // Right Column
+        return ''; // 0 deg
+      case 6:
+        if (index < 3) return 'rotate-180';
+        return ''; // 0 deg
+      default:
+        return '';
+    }
+  };
+
   // --- MAIN RENDER ---
 
-  // Forced horizontal ONLY for GAME view
   const containerStyle = (view === 'GAME' && isPortrait) ? {
     width: '100vh',
     height: '100vw',
@@ -667,7 +693,7 @@ export default function CommanderApp() {
     overflow: 'hidden'
   };
 
-  // --- SETUP VIEW (PORTRAIT OPTIMIZED) ---
+  // --- SETUP VIEW ---
   if (view === 'SETUP') {
     return (
       <div className="bg-slate-950 text-slate-100 font-sans fixed inset-0 overflow-hidden flex flex-col">
@@ -679,7 +705,6 @@ export default function CommanderApp() {
         {/* Header */}
         <div className="relative p-4 flex items-center justify-between bg-slate-900/50 border-b border-slate-800 shrink-0 z-10 backdrop-blur-md">
           <div className="flex items-center gap-3">
-             {/* Title simplified as requested */}
              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
                Commander Tracker
              </h1>
@@ -778,8 +803,7 @@ export default function CommanderApp() {
           </Button>
         </div>
 
-        {/* Modals (Library, History, Confirm) unchanged logic, just ensuring they are rendered */}
-        {/* Library Modal */}
+        {/* Modals ... (Library, History, Confirm) */}
         <Modal isOpen={libraryOpen} onClose={() => setLibraryOpen(false)} title="Libreria">
              <div className="space-y-6">
               <div>
@@ -821,7 +845,6 @@ export default function CommanderApp() {
             </div>
         </Modal>
 
-        {/* Deletion Confirmation Modal */}
         {itemToDelete && (
             <Modal isOpen={true} onClose={() => setItemToDelete(null)} title="Conferma Eliminazione" zIndex="z-[60]">
               <div className="flex flex-col gap-6 text-center pt-4 pb-2">
@@ -843,7 +866,6 @@ export default function CommanderApp() {
             </Modal>
         )}
 
-        {/* Match History */}
         <Modal 
             isOpen={historyListOpen} 
             onClose={() => { setHistoryListOpen(false); setStatsPlayerId(null); }} 
@@ -953,21 +975,7 @@ export default function CommanderApp() {
           if (displayPlayers.length === 4) {
             [displayPlayers[2], displayPlayers[3]] = [displayPlayers[3], displayPlayers[2]];
           }
-          // CHANGE: Reordering for 5 players to achieve visual clockwise circle
-          // Current array index flow: 0->1->2->3->4
-          // Visual grid flow with 3 cols:
-          // Row 1: Col1(0) Col2(1) Col3(2)
-          // Row 2: Col1(3) Col2(4)
-          // Visual Clockwise desired: P0(TL) -> P1(TM) -> P2(R-Tall) -> P3(BM) -> P4(BL) -> P0...
-          // Grid positions:
-          // P0 -> 0 (TL)
-          // P1 -> 1 (TM)
-          // P2 -> 2 (R - Tall)
-          // P3 -> 4 (BM) (Grid item index 4 lands in col 2 row 2)
-          // P4 -> 3 (BL) (Grid item index 3 lands in col 1 row 2)
-          // So we need the array to be: [P0, P1, P2, P4, P3]
           if (displayPlayers.length === 5) {
-             // Swap index 3 and 4 so that P3 goes to last slot (BM) and P4 goes to second-to-last slot (BL)
              [displayPlayers[3], displayPlayers[4]] = [displayPlayers[4], displayPlayers[3]];
           }
 
@@ -985,158 +993,169 @@ export default function CommanderApp() {
               iconColor = 'text-green-500';
               counterColor = 'text-green-200';
               currentValue = player.poison;
-              currentIcon = <Droplet size={20} className="md:w-6 md:h-6" />;
+              currentIcon = <Droplet size={24} className="md:w-6 md:h-6" />;
               fieldName = 'poison';
             } else {
               bgClass = 'bg-cyan-950/40 border-cyan-500/30';
               iconColor = 'text-cyan-400';
               counterColor = 'text-cyan-200';
               currentValue = player.commanderTax;
-              currentIcon = <Gem size={20} className="md:w-6 md:h-6" />;
+              currentIcon = <Gem size={24} className="md:w-6 md:h-6" />;
               fieldName = 'commanderTax';
             }
 
             const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
 
+            // Get rotation for this index
+            const rotationClass = getRotationClass(idx, gameState.players.length);
+
             return (
               <div 
                 key={player.gameId} 
-                className={`relative rounded-2xl overflow-hidden flex flex-col transition-all duration-500 border-2 ${getCellSpanClass(idx, gameState.players.length)} ${
+                className={`relative rounded-2xl overflow-hidden border-2 ${getCellSpanClass(idx, gameState.players.length)} ${
                   isDead ? 'border-red-900/50 grayscale opacity-60' : 
                   isActive ? 'border-indigo-400 shadow-[0_0_30px_rgba(99,102,241,0.2)] scale-[1.01] z-10' : 
                   'border-slate-800'
                 }`}
               >
+                {/* Layer 1: Background */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${player.color} opacity-40 z-0`} />
                 
-                {!isDead && !overlay && !winner && (
-                  <div className="absolute top-12 bottom-14 left-0 right-0 z-10 flex">
-                    <div 
-                      className={`w-1/2 h-full border-r border-white/5 bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'left' ? 'bg-white/10' : ''}`}
-                      onPointerDown={(e) => handlePointerDown(e, player.gameId, 'left')}
-                      onPointerUp={(e) => handlePointerUp(e, player.gameId, 'left')}
-                      onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
-                      onContextMenu={(e) => e.preventDefault()}
-                    ></div>
-                    <div 
-                      className={`w-1/2 h-full bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'right' ? 'bg-white/10' : ''}`}
-                      onPointerDown={(e) => handlePointerDown(e, player.gameId, 'right')}
-                      onPointerUp={(e) => handlePointerUp(e, player.gameId, 'right')}
-                      onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
-                      onContextMenu={(e) => e.preventDefault()}
-                    ></div>
-                  </div>
-                )}
-
-                <div className="relative z-20 h-full flex flex-col pointer-events-none">
-                  <div className="px-3 py-2 flex justify-between items-start bg-black/20 pointer-events-auto min-h-[3rem]">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
-                      <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
-                        <Shield size={10} /> {player.deckName}
-                      </div>
-                    </div>
-                    {isActive && !overlay && !winner && (
-                         <span className="shrink-0 px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-lg animate-pulse">
-                           Attivo
-                         </span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 flex items-center justify-center w-full">
-                    {isDead ? (
-                       <div className="flex flex-col items-center justify-center gap-2 pointer-events-auto">
-                         <div className="flex flex-col items-center text-red-400">
-                           <Skull size={24} className="mb-1" />
-                           <span className="text-lg font-bold">ELIMINATO</span>
-                           <span className="text-[10px] text-red-200/70">{player.deathReason}</span>
-                         </div>
-                         <button onClick={() => resurrectPlayer(player.gameId)} className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-[10px] font-bold border border-slate-600">
-                           <Undo2 size={12} /> Undo
-                         </button>
-                       </div>
-                    ) : (
-                      <div className="text-8xl md:text-[10rem] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none">
-                        {player.life}
+                {/* ROTATING CONTENT WRAPPER */}
+                <div className={`absolute inset-0 flex flex-col ${rotationClass} transition-transform duration-300`}>
+                  
+                    {/* Layer 2: Interactive Tap Zones */}
+                    {!isDead && !overlay && !winner && (
+                      <div className="absolute top-14 bottom-16 left-0 right-0 z-10 flex">
+                        <div 
+                          className={`w-1/2 h-full border-r border-white/5 bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'left' ? 'bg-white/10' : ''}`}
+                          onPointerDown={(e) => handlePointerDown(e, player.gameId, 'left')}
+                          onPointerUp={(e) => handlePointerUp(e, player.gameId, 'left')}
+                          onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
+                          onContextMenu={(e) => e.preventDefault()}
+                        ></div>
+                        <div 
+                          className={`w-1/2 h-full bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'right' ? 'bg-white/10' : ''}`}
+                          onPointerDown={(e) => handlePointerDown(e, player.gameId, 'right')}
+                          onPointerUp={(e) => handlePointerUp(e, player.gameId, 'right')}
+                          onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
+                          onContextMenu={(e) => e.preventDefault()}
+                        ></div>
                       </div>
                     )}
-                  </div>
 
-                  {!isDead && !winner && (
-                    <div className="flex items-center justify-center pointer-events-auto pb-2 min-h-[3.5rem]">
-                      {!menuOpen && (
-                        <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90">
-                          <Plus size={28} className="text-white/80" />
-                        </button>
-                      )}
-                      {menuOpen && (
-                        <div className="flex gap-3 items-center animate-in slide-in-from-bottom-2 duration-200 bg-black/40 rounded-full px-2 py-1 backdrop-blur-md">
-                          <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white">
-                            <X size={24} />
-                          </button>
-                          <button onClick={() => setOverlay(player.gameId, 'MANA')} className={`flex items-center justify-center w-12 h-12 rounded-full border transition-all ${overlay === 'MANA' || Object.values(player.mana).some(v => v > 0) ? 'bg-amber-600 border-amber-400 text-white' : 'bg-slate-900/50 border-slate-700/30 text-slate-400'}`}>
-                            <Sparkles size={24} />
-                          </button>
-                          <div className={`flex items-center gap-1 px-1 rounded-full border transition-colors duration-300 h-12 ${bgClass}`}>
-                            <button onClick={() => togglePlayerCounter(player.gameId)} className={`p-1 rounded-full ${iconColor}`}>
-                              {currentIcon}
-                            </button>
-                            <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: Math.max(0, p[fieldName] - 1) }))} className="w-8 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-xl">-</button>
-                            <span className={`font-bold w-8 text-center text-xl ${counterColor}`}>{currentValue}</span>
-                            <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: p[fieldName] + 1 }))} className="w-8 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-xl">+</button>
+                    {/* Layer 3: Content Container */}
+                    <div className="relative z-20 h-full flex flex-col pointer-events-none">
+                      <div className="px-3 py-2 flex justify-between items-start bg-black/20 pointer-events-auto min-h-[3.5rem]">
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
+                          <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
+                            <Shield size={10} /> {player.deckName}
                           </div>
-                          <button onClick={() => setOverlay(player.gameId, 'CMD')} className={`flex items-center justify-center w-12 h-12 rounded-full border transition-all ${maxCmdDmg > 0 ? maxCmdDmg >= 15 ? 'bg-red-600 border-red-500 text-white' : 'bg-red-900/50 border-red-500/30 text-red-300' : 'bg-slate-900/50 border-slate-700/30 text-slate-400'}`}>
-                             <Swords size={24} />
-                          </button>
+                        </div>
+                        {isActive && !overlay && !winner && (
+                            <span className="shrink-0 px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-lg animate-pulse">
+                              Attivo
+                            </span>
+                        )}
+                      </div>
+
+                      <div className="flex-1 flex items-center justify-center w-full">
+                        {isDead ? (
+                          <div className="flex flex-col items-center justify-center gap-2 pointer-events-auto">
+                            <div className="flex flex-col items-center text-red-400">
+                              <Skull size={24} className="mb-1" />
+                              <span className="text-lg font-bold">ELIMINATO</span>
+                              <span className="text-[10px] text-red-200/70">{player.deathReason}</span>
+                            </div>
+                            <button onClick={() => resurrectPlayer(player.gameId)} className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-[10px] font-bold border border-slate-600">
+                              <Undo2 size={12} /> Undo
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-8xl md:text-[10rem] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none">
+                            {player.life}
+                          </div>
+                        )}
+                      </div>
+
+                      {!isDead && !winner && (
+                        <div className="flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem]">
+                          {!menuOpen && (
+                            <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90">
+                              <Plus size={28} className="text-white/80" />
+                            </button>
+                          )}
+                          {menuOpen && (
+                            <div className="flex gap-3 items-center animate-in slide-in-from-bottom-2 duration-200 bg-black/40 rounded-full px-2 py-1 backdrop-blur-md">
+                              <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white">
+                                <X size={24} />
+                              </button>
+                              <button onClick={() => setOverlay(player.gameId, 'MANA')} className={`flex items-center justify-center w-12 h-12 rounded-full border transition-all ${overlay === 'MANA' || Object.values(player.mana).some(v => v > 0) ? 'bg-amber-600 border-amber-400 text-white' : 'bg-slate-900/50 border-slate-700/30 text-slate-400'}`}>
+                                <Sparkles size={24} />
+                              </button>
+                              <div className={`flex items-center gap-1 px-1 rounded-full border transition-colors duration-300 h-12 ${bgClass}`}>
+                                <button onClick={() => togglePlayerCounter(player.gameId)} className={`p-1 rounded-full ${iconColor}`}>
+                                  {currentIcon}
+                                </button>
+                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: Math.max(0, p[fieldName] - 1) }))} className="w-12 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-2xl">-</button>
+                                <span className={`font-bold w-10 text-center text-xl ${counterColor}`}>{currentValue}</span>
+                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: p[fieldName] + 1 }))} className="w-12 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-2xl">+</button>
+                              </div>
+                              <button onClick={() => setOverlay(player.gameId, 'CMD')} className={`flex items-center justify-center w-12 h-12 rounded-full border transition-all ${maxCmdDmg > 0 ? maxCmdDmg >= 15 ? 'bg-red-600 border-red-500 text-white' : 'bg-red-900/50 border-red-500/30 text-red-300' : 'bg-slate-900/50 border-slate-700/30 text-slate-400'}`}>
+                                <Swords size={24} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                {overlay === 'MANA' && (
-                  <div className="absolute inset-0 z-40 bg-slate-900/95 backdrop-blur-xl flex flex-col p-3 animate-in zoom-in-95 duration-200 pointer-events-auto">
-                    <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white bg-black/20 rounded-full z-50"><X size={18} /></button>
-                    <h4 className="text-center font-bold text-amber-400 mb-1 text-xs flex items-center justify-center gap-1"><Sparkles size={12} /> Mana</h4>
-                    <div className="grid grid-cols-3 gap-2 flex-1 content-center">
-                      {MANA_TYPES.map(type => (
-                        <div key={type.key} className={`flex flex-col items-center justify-center p-1 rounded border ${type.color}`}>
-                           <type.icon size={16} className="mb-1 opacity-80" />
-                           <div className="flex items-center gap-1">
-                             <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))} className="w-5 h-5 rounded bg-black/30 font-bold text-xs">-</button>
-                             <span className="font-bold w-4 text-center text-xs">{player.mana[type.key]}</span>
-                             <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))} className="w-5 h-5 rounded bg-black/30 font-bold text-xs">+</button>
-                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {overlay === 'CMD' && (
-                  <div className="absolute inset-0 z-40 bg-slate-900/95 backdrop-blur-xl flex flex-col p-3 animate-in zoom-in-95 duration-200 overflow-y-auto pointer-events-auto">
-                    <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white bg-black/20 rounded-full z-50"><X size={18} /></button>
-                    <h4 className="text-center font-bold text-red-400 mb-2 text-xs flex items-center justify-center gap-1"><Swords size={12} /> Danni Cmd</h4>
-                    <div className="flex flex-col gap-1 flex-1">
-                      {gameState.players.filter(p => p.gameId !== player.gameId).map(opponent => {
-                          const currentDmg = player.commanderDamage[opponent.gameId] || 0;
-                          return (
-                            <div key={opponent.gameId} className="flex items-center justify-between bg-black/40 p-1.5 rounded border border-white/10">
-                              <div className="flex flex-col min-w-0 flex-1 mr-2">
-                                <span className="text-[10px] font-bold truncate">{opponent.deckName}</span>
-                                <span className="text-[8px] text-slate-400 truncate">{opponent.name}</span>
-                              </div>
+                    {/* OVERLAYS - INSIDE ROTATION WRAPPER so they rotate too */}
+                    {overlay === 'MANA' && (
+                      <div className="absolute inset-0 z-40 bg-slate-900/95 backdrop-blur-xl flex flex-col p-3 animate-in zoom-in-95 duration-200 pointer-events-auto">
+                        <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white bg-black/20 rounded-full z-50"><X size={18} /></button>
+                        <h4 className="text-center font-bold text-amber-400 mb-1 text-xs flex items-center justify-center gap-1"><Sparkles size={12} /> Mana</h4>
+                        <div className="grid grid-cols-3 gap-2 flex-1 content-center">
+                          {MANA_TYPES.map(type => (
+                            <div key={type.key} className={`flex flex-col items-center justify-center p-1 rounded border ${type.color}`}>
+                              <type.icon size={16} className="mb-1 opacity-80" />
                               <div className="flex items-center gap-1">
-                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, commanderDamage: { ...p.commanderDamage, [opponent.gameId]: Math.max(0, currentDmg - 1) } }))} className="w-6 h-6 rounded bg-slate-700 font-bold text-xs">-</button>
-                                <span className={`w-5 text-center font-bold text-xs ${currentDmg >= 21 ? 'text-red-500' : 'text-white'}`}>{currentDmg}</span>
-                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, life: p.life - 1, commanderDamage: { ...p.commanderDamage, [opponent.gameId]: currentDmg + 1 } }))} className="w-6 h-6 rounded bg-slate-700 font-bold text-xs text-red-400">+</button>
+                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))} className="w-5 h-5 rounded bg-black/30 font-bold text-xs">-</button>
+                                <span className="font-bold w-4 text-center text-xs">{player.mana[type.key]}</span>
+                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))} className="w-5 h-5 rounded bg-black/30 font-bold text-xs">+</button>
                               </div>
                             </div>
-                          );
-                      })}
-                    </div>
-                  </div>
-                )}
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {overlay === 'CMD' && (
+                      <div className="absolute inset-0 z-40 bg-slate-900/95 backdrop-blur-xl flex flex-col p-3 animate-in zoom-in-95 duration-200 overflow-y-auto pointer-events-auto">
+                        <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white bg-black/20 rounded-full z-50"><X size={18} /></button>
+                        <h4 className="text-center font-bold text-red-400 mb-2 text-xs flex items-center justify-center gap-1"><Swords size={12} /> Danni Cmd</h4>
+                        <div className="flex flex-col gap-1 flex-1">
+                          {gameState.players.filter(p => p.gameId !== player.gameId).map(opponent => {
+                              const currentDmg = player.commanderDamage[opponent.gameId] || 0;
+                              return (
+                                <div key={opponent.gameId} className="flex items-center justify-between bg-black/40 p-1.5 rounded border border-white/10">
+                                  <div className="flex flex-col min-w-0 flex-1 mr-2">
+                                    <span className="text-[10px] font-bold truncate">{opponent.deckName}</span>
+                                    <span className="text-[8px] text-slate-400 truncate">{opponent.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, commanderDamage: { ...p.commanderDamage, [opponent.gameId]: Math.max(0, currentDmg - 1) } }))} className="w-6 h-6 rounded bg-slate-700 font-bold text-xs">-</button>
+                                    <span className={`w-5 text-center font-bold text-xs ${currentDmg >= 21 ? 'text-red-500' : 'text-white'}`}>{currentDmg}</span>
+                                    <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, life: p.life - 1, commanderDamage: { ...p.commanderDamage, [opponent.gameId]: currentDmg + 1 } }))} className="w-6 h-6 rounded bg-slate-700 font-bold text-xs text-red-400">+</button>
+                                  </div>
+                                </div>
+                              );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                </div>
 
               </div>
             );
