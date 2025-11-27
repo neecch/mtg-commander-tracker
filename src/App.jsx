@@ -682,7 +682,7 @@ export default function CommanderApp() {
       isTurnButtonLongPress.current = true;
       if (navigator.vibrate) navigator.vibrate(50);
       setGameMenuOpen(true);
-    }, 1000); 
+    }, 600); // Changed from 1000 to 600
   };
 
   const handleTurnButtonUp = (e) => {
