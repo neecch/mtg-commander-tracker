@@ -37,7 +37,8 @@ import {
   AlertTriangle,
   Clock,
   Hourglass,
-  Settings
+  Settings,
+  Minus // Icon for minus
 } from 'lucide-react';
 
 // --- Utility Components ---
@@ -149,6 +150,7 @@ export default function CommanderApp() {
   const [playerOverlays, setPlayerOverlays] = useState({});
   const [playerMenus, setPlayerMenus] = useState({});
   const [tapFeedback, setTapFeedback] = useState({}); 
+  const [cmdTapFeedback, setCmdTapFeedback] = useState({});
   const [winner, setWinner] = useState(null); 
   
   const [isPortrait, setIsPortrait] = useState(false);
@@ -606,6 +608,72 @@ export default function CommanderApp() {
     setTapFeedback(prev => ({ ...prev, [gameId]: null }));
   };
 
+  // NEW: Interactions for Commander Damage (Grid) with threshold check
+  const handleCmdPointerDown = (e, playerId, opponentId, side) => {
+    isLongPress.current = false;
+    const feedbackKey = `${playerId}_${opponentId}`;
+    setCmdTapFeedback(prev => ({ ...prev, [feedbackKey]: side }));
+
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      updatePlayer(playerId, p => {
+          const currentDmg = p.commanderDamage[opponentId] || 0;
+          const diff = side === 'right' ? 10 : -10;
+          const newDmg = Math.max(0, currentDmg + diff);
+          
+          // Check threshold (21)
+          if (newDmg >= 21 && currentDmg < 21) {
+             setTimeout(() => setPlayerOverlays(prev => ({...prev, [playerId]: null})), 300);
+          }
+
+          return {
+              ...p,
+              life: p.life - diff,
+              commanderDamage: { ...p.commanderDamage, [opponentId]: newDmg }
+          };
+      });
+      if (navigator.vibrate) navigator.vibrate(50);
+      setCmdTapFeedback(prev => ({ ...prev, [feedbackKey]: null }));
+    }, 500);
+  };
+
+  const handleCmdPointerUp = (e, playerId, opponentId, side) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    const feedbackKey = `${playerId}_${opponentId}`;
+    
+    if (!isLongPress.current) {
+        updatePlayer(playerId, p => {
+          const currentDmg = p.commanderDamage[opponentId] || 0;
+          const diff = side === 'right' ? 1 : -1;
+          const newDmg = Math.max(0, currentDmg + diff);
+          
+          // Check threshold (21)
+          if (newDmg >= 21 && currentDmg < 21) {
+             setTimeout(() => setPlayerOverlays(prev => ({...prev, [playerId]: null})), 300);
+          }
+
+          return {
+              ...p,
+              life: p.life - diff,
+              commanderDamage: { ...p.commanderDamage, [opponentId]: newDmg }
+          };
+      });
+    }
+    setCmdTapFeedback(prev => ({ ...prev, [feedbackKey]: null }));
+  };
+  
+  const handleCmdPointerLeave = (e, playerId, opponentId) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    const feedbackKey = `${playerId}_${opponentId}`;
+    setCmdTapFeedback(prev => ({ ...prev, [feedbackKey]: null }));
+  };
+
   const handleTurnButtonDown = (e) => {
     e.preventDefault(); 
     isTurnButtonLongPress.current = false;
@@ -962,11 +1030,25 @@ export default function CommanderApp() {
             onPointerLeave={handleTurnButtonLeave}
             onContextMenu={(e) => e.preventDefault()}
           >
-            <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Turno</span>
-            <span className="text-4xl font-black text-white">{gameState.turnCount}</span>
-            <div className="mt-1 flex items-center gap-1 text-xs text-slate-400 group-hover:text-white">
-               <ChevronRight size={14} />
-            </div>
+            {(() => {
+                // Calculate rotation for TURN BUTTON content based on active player
+                let displayPlayers = [...gameState.players];
+                if (displayPlayers.length === 4) {
+                    [displayPlayers[2], displayPlayers[3]] = [displayPlayers[3], displayPlayers[2]];
+                }
+                if (displayPlayers.length === 5) {
+                    [displayPlayers[3], displayPlayers[4]] = [displayPlayers[4], displayPlayers[3]];
+                }
+                const activePlayerGridIndex = displayPlayers.findIndex(p => p.gameId === gameState.players[gameState.activePlayerIndex]?.gameId);
+                const rotationClass = getRotationClass(activePlayerGridIndex, gameState.players.length);
+
+                return (
+                    <div className={`flex flex-col items-center justify-center ${rotationClass} transition-transform duration-500`}>
+                        <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Turno</span>
+                        <span className="text-4xl font-black text-white">{gameState.turnCount}</span>
+                    </div>
+                );
+            })()}
           </div>
         </div>
 
@@ -1005,6 +1087,7 @@ export default function CommanderApp() {
             const isDead = player.isDead;
             const overlay = playerOverlays[player.gameId]; 
             const feedback = tapFeedback[player.gameId];
+            const cmdFeedback = cmdTapFeedback; // Access global state directly
             const menuOpen = playerMenus[player.gameId];
             const activeMode = player.activeCounter; 
             let counterColor, bgClass, iconColor, currentValue, currentIcon, fieldName;
@@ -1161,19 +1244,40 @@ export default function CommanderApp() {
                       <div className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 overflow-y-auto pointer-events-auto">
                         <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white bg-black/20 rounded-full z-50"><X size={18} /></button>
                         <h4 className="text-center font-bold text-red-400 mb-2 text-xs flex items-center justify-center gap-1"><Swords size={12} /> Danni Cmd</h4>
-                        <div className="flex flex-col gap-1 flex-1">
+                        <div className="grid grid-cols-2 grid-rows-2 h-full gap-2 pb-4">
                           {gameState.players.filter(p => p.gameId !== player.gameId).map(opponent => {
                               const currentDmg = player.commanderDamage[opponent.gameId] || 0;
+                              const feedbackKey = `${player.gameId}_${opponent.gameId}`;
+                              const activeFeedback = cmdFeedback[feedbackKey];
+
                               return (
-                                <div key={opponent.gameId} className="flex items-center justify-between bg-black/40 p-1.5 rounded border border-white/10">
-                                  <div className="flex flex-col min-w-0 flex-1 mr-2">
-                                    <span className="text-[10px] font-bold truncate">{opponent.deckName}</span>
-                                    <span className="text-[8px] text-slate-400 truncate">{opponent.name}</span>
+                                <div 
+                                    key={opponent.gameId} 
+                                    className="relative flex flex-col items-center justify-center bg-black/40 rounded-lg border border-white/10 overflow-hidden select-none touch-manipulation"
+                                    onPointerDown={(e) => handleCmdPointerDown(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
+                                    onPointerUp={(e) => handleCmdPointerUp(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
+                                    onPointerLeave={(e) => handleCmdPointerLeave(e, player.gameId, opponent.gameId)}
+                                    onContextMenu={(e) => e.preventDefault()}
+                                >
+                                  {/* Visual Feedback */}
+                                  <div className="absolute inset-0 flex pointer-events-none">
+                                      {/* Left Zone (Green/Minus) */}
+                                      <div className={`flex-1 h-full bg-green-500/10 flex items-center justify-center relative transition-colors ${activeFeedback === 'left' ? 'bg-green-500/30' : ''}`}>
+                                          <Minus size={48} className="text-green-200/20 absolute" />
+                                      </div>
+                                      {/* Right Zone (Red/Plus) */}
+                                      <div className={`flex-1 h-full bg-red-500/10 flex items-center justify-center relative transition-colors ${activeFeedback === 'right' ? 'bg-red-500/30' : ''}`}>
+                                          <Plus size={48} className="text-red-200/20 absolute" />
+                                      </div>
                                   </div>
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, commanderDamage: { ...p.commanderDamage, [opponent.gameId]: Math.max(0, currentDmg - 1) } }))} className="w-6 h-6 rounded bg-slate-700 font-bold text-xs">-</button>
-                                    <span className={`w-5 text-center font-bold text-xs ${currentDmg >= 21 ? 'text-red-500' : 'text-white'}`}>{currentDmg}</span>
-                                    <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, life: p.life - 1, commanderDamage: { ...p.commanderDamage, [opponent.gameId]: currentDmg + 1 } }))} className="w-6 h-6 rounded bg-slate-700 font-bold text-xs text-red-400">+</button>
+
+                                  <span className="text-[10px] text-slate-300 font-bold truncate w-full text-center px-1 absolute top-1 z-10 shadow-black drop-shadow-md">{opponent.deckName}</span>
+                                  <span className={`text-4xl font-black z-10 drop-shadow-lg ${currentDmg >= 21 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{currentDmg}</span>
+                                  
+                                  {/* Small Helper Icons at bottom */}
+                                  <div className="absolute bottom-1 w-full flex justify-between px-4 text-[10px] text-slate-400 font-bold pointer-events-none z-10 opacity-70">
+                                      <span>-</span>
+                                      <span>+</span>
                                   </div>
                                 </div>
                               );
