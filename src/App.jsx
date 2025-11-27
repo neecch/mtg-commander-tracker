@@ -1028,6 +1028,7 @@ export default function CommanderApp() {
             const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
             const rotationClass = getRotationClass(idx, gameState.players.length);
 
+            // MODIFIED: Only elevate z-index if overlay is open
             const cardZIndex = overlay ? 'z-[60]' : (isDead ? 'z-0' : (isActive ? 'z-10' : 'z-0'));
 
             return (
@@ -1073,12 +1074,6 @@ export default function CommanderApp() {
                                 <Shield size={10} /> {player.deckName}
                             </div>
                         </div>
-                        
-                        {isActive && !overlay && !winner && (
-                            <span className="absolute right-2 top-2 shrink-0 px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-lg animate-pulse">
-                              Attivo
-                            </span>
-                        )}
                       </div>
 
                       <div className="flex-1 flex items-center justify-center w-full min-h-0">
