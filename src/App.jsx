@@ -75,7 +75,7 @@ const Modal = ({ isOpen, onClose, title, children, zIndex = "z-50" }) => {
   if (!isOpen) return null;
   return (
     <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200`}>
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[85dvh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
         <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-950/50 z-10 shrink-0">
           <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
           {onClose && (
@@ -714,14 +714,14 @@ export default function CommanderApp() {
     overflow: 'hidden'
   } : {
     width: '100%',
-    height: '100vh', // Use h-screen as fallback, but class overrides with dvh
+    height: '100vh',
     overflow: 'hidden'
   };
 
   // --- SETUP VIEW ---
   if (view === 'SETUP') {
     return (
-      <div className="bg-slate-950 text-slate-100 font-sans fixed inset-0 overflow-hidden flex flex-col h-[100dvh]">
+      <div className="bg-slate-950 text-slate-100 font-sans fixed inset-0 overflow-hidden flex flex-col h-[100dvh] w-[100dvw]">
         
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[40%] bg-indigo-600/20 rounded-full blur-[100px] animate-pulse-slow pointer-events-none"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[40%] bg-purple-600/20 rounded-full blur-[100px] animate-pulse-slow pointer-events-none"></div>
@@ -743,10 +743,7 @@ export default function CommanderApp() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 z-10 pb-24 overscroll-contain">
-          
-          {/* Use flex-col on mobile, flex-row on desktop for quick actions */}
           <div className="flex flex-col md:flex-row gap-4">
-             {/* Player Count */}
              <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
                 <span className="text-xs font-bold text-slate-400 uppercase">Giocatori</span>
                 <div className="flex items-center gap-3">
@@ -755,8 +752,6 @@ export default function CommanderApp() {
                   <button onClick={() => setNumPlayers(Math.min(6, numPlayers + 1))} className="w-12 h-12 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">+</button>
                 </div>
              </div>
-
-             {/* Quick Start Button */}
              <div className="flex-1">
                 <button 
                   onClick={startGenericGame}
@@ -825,7 +820,6 @@ export default function CommanderApp() {
           </Button>
         </div>
 
-        {/* Modals */}
         <Modal isOpen={libraryOpen} onClose={() => setLibraryOpen(false)} title="Libreria">
              <div className="space-y-6">
               <div>
@@ -953,7 +947,7 @@ export default function CommanderApp() {
   // --- GAME VIEW ---
   
   return (
-    <div className="bg-slate-950 text-slate-100 fixed inset-0 font-sans select-none overflow-hidden h-[100dvh]" style={containerStyle}>
+    <div className="bg-slate-950 text-slate-100 fixed inset-0 font-sans select-none overflow-hidden h-[100dvh] w-[100dvw]" style={containerStyle}>
       
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-950/20 via-slate-950 to-slate-950 -z-10" />
 
@@ -1034,13 +1028,16 @@ export default function CommanderApp() {
             const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
             const rotationClass = getRotationClass(idx, gameState.players.length);
 
-            // MODIFIED: Only elevate z-index if overlay is open
             const cardZIndex = overlay ? 'z-[60]' : (isDead ? 'z-0' : (isActive ? 'z-10' : 'z-0'));
 
             return (
               <div 
                 key={player.gameId} 
-                className={`relative rounded-2xl overflow-hidden border-2 ${getCellSpanClass(idx, gameState.players.length)} ${isDead ? 'border-red-900/50 grayscale opacity-60' : isActive ? 'border-indigo-400 shadow-[0_0_30px_rgba(99,102,241,0.2)]' : 'border-slate-800'} ${cardZIndex}`}
+                className={`relative rounded-2xl overflow-hidden border-2 ${getCellSpanClass(idx, gameState.players.length)} ${
+                  isDead ? 'border-red-900/50 grayscale opacity-60' : 
+                  isActive ? 'border-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.3)]' : 
+                  'border-slate-800'
+                } ${cardZIndex}`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${player.color} opacity-40 z-0`} />
                 
@@ -1069,7 +1066,7 @@ export default function CommanderApp() {
 
                     {/* Layer 3: Content */}
                     <div className="relative z-20 h-full flex flex-col pointer-events-none">
-                      <div className="relative px-3 py-2 flex items-center justify-center bg-black/20 pointer-events-auto min-h-[3.5rem]">
+                      <div className="relative px-3 py-2 flex items-center justify-center bg-black/20 pointer-events-auto min-h-[3.5rem] shrink-0">
                         <div className="flex flex-col items-center justify-center w-full"> 
                             <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
                             <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
@@ -1084,7 +1081,7 @@ export default function CommanderApp() {
                         )}
                       </div>
 
-                      <div className="flex-1 flex items-center justify-center w-full">
+                      <div className="flex-1 flex items-center justify-center w-full min-h-0">
                         {isDead ? (
                           <div className="flex flex-col items-center justify-center gap-2 pointer-events-auto">
                             <div className="flex flex-col items-center text-red-400">
@@ -1097,14 +1094,14 @@ export default function CommanderApp() {
                             </button>
                           </div>
                         ) : (
-                          <div className="text-8xl md:text-[10rem] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none">
+                          <div className="text-[20vmin] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none leading-none">
                             {player.life}
                           </div>
                         )}
                       </div>
 
                       {!isDead && !winner && (
-                        <div className="flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem] relative">
+                        <div className="flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem] shrink-0 relative">
                           {!menuOpen && (
                             <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90 z-20">
                               <Plus size={28} className="text-white/80" />
@@ -1113,7 +1110,7 @@ export default function CommanderApp() {
                           
                           {/* EXPANDABLE MENU */}
                           {menuOpen && (
-                            <div className="absolute bottom-2 left-2 right-2 z-30 bg-slate-950/90 backdrop-blur-md rounded-2xl p-2 border border-slate-800 shadow-2xl animate-in slide-in-from-bottom-2 duration-200 flex flex-wrap justify-center gap-2">
+                            <div className="absolute bottom-2 left-2 right-2 z-30 bg-slate-950/60 backdrop-blur-md rounded-2xl p-2 border border-slate-800 shadow-2xl animate-in slide-in-from-bottom-2 duration-200 flex flex-wrap justify-center gap-2">
                               
                               <div className="w-full flex justify-end mb-1">
                                 <button onClick={() => togglePlayerMenu(player.gameId)} className="p-1 text-slate-400 hover:text-white bg-white/10 rounded-full">
