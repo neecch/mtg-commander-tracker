@@ -38,7 +38,7 @@ import {
   Clock,
   Hourglass,
   Settings,
-  Minus // Icon for minus
+  Minus 
 } from 'lucide-react';
 
 // --- Utility Components ---
@@ -101,7 +101,8 @@ export default function CommanderApp() {
       { id: 'p1', name: 'Chandra' }, 
       { id: 'p2', name: 'Jace' },
       { id: 'p3', name: 'Liliana' },
-      { id: 'p4', name: 'Ajani' }
+      { id: 'p4', name: 'Ajani' },
+      { id: 'p5', name: 'Nissa' }
     ];
   });
 
@@ -109,7 +110,10 @@ export default function CommanderApp() {
     const saved = localStorage.getItem('mtg_decks');
     return saved ? JSON.parse(saved) : [
       { id: 'd1', commander: 'Atraxa', owner: 'p1' },
-      { id: 'd2', commander: 'Ur-Dragon', owner: 'p2' }
+      { id: 'd2', commander: 'Ur-Dragon', owner: 'p2' },
+      { id: 'd3', commander: 'Scarab God', owner: 'p3' },
+      { id: 'd4', commander: 'Arahbo', owner: 'p4' },
+      { id: 'd5', commander: 'Lathril', owner: 'p5' }
     ];
   });
 
@@ -608,7 +612,6 @@ export default function CommanderApp() {
     setTapFeedback(prev => ({ ...prev, [gameId]: null }));
   };
 
-  // NEW: Interactions for Commander Damage (Grid) with threshold check
   const handleCmdPointerDown = (e, playerId, opponentId, side) => {
     isLongPress.current = false;
     const feedbackKey = `${playerId}_${opponentId}`;
@@ -620,12 +623,9 @@ export default function CommanderApp() {
           const currentDmg = p.commanderDamage[opponentId] || 0;
           const diff = side === 'right' ? 10 : -10;
           const newDmg = Math.max(0, currentDmg + diff);
-          
-          // Check threshold (21)
           if (newDmg >= 21 && currentDmg < 21) {
              setTimeout(() => setPlayerOverlays(prev => ({...prev, [playerId]: null})), 300);
           }
-
           return {
               ...p,
               life: p.life - diff,
@@ -643,18 +643,14 @@ export default function CommanderApp() {
       longPressTimer.current = null;
     }
     const feedbackKey = `${playerId}_${opponentId}`;
-    
     if (!isLongPress.current) {
         updatePlayer(playerId, p => {
           const currentDmg = p.commanderDamage[opponentId] || 0;
           const diff = side === 'right' ? 1 : -1;
           const newDmg = Math.max(0, currentDmg + diff);
-          
-          // Check threshold (21)
           if (newDmg >= 21 && currentDmg < 21) {
              setTimeout(() => setPlayerOverlays(prev => ({...prev, [playerId]: null})), 300);
           }
-
           return {
               ...p,
               life: p.life - diff,
@@ -677,12 +673,11 @@ export default function CommanderApp() {
   const handleTurnButtonDown = (e) => {
     e.preventDefault(); 
     isTurnButtonLongPress.current = false;
-    
     turnButtonTimer.current = setTimeout(() => {
       isTurnButtonLongPress.current = true;
       if (navigator.vibrate) navigator.vibrate(50);
       setGameMenuOpen(true);
-    }, 600); // Changed from 1000 to 600
+    }, 600);
   };
 
   const handleTurnButtonUp = (e) => {
@@ -691,7 +686,6 @@ export default function CommanderApp() {
       clearTimeout(turnButtonTimer.current);
       turnButtonTimer.current = null;
     }
-
     if (!isTurnButtonLongPress.current) {
       nextTurn();
     }
@@ -1024,7 +1018,7 @@ export default function CommanderApp() {
         {/* Center Control */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center pointer-events-none">
           <div 
-            className="pointer-events-auto bg-slate-900/90 backdrop-blur-xl border-2 border-indigo-500/50 rounded-full shadow-[0_0_50px_rgba(79,70,229,0.3)] flex flex-col items-center justify-center w-24 h-24 md:w-32 md:h-32 group hover:scale-105 transition-transform cursor-pointer select-none touch-manipulation active:scale-95"
+            className="pointer-events-auto bg-white/20 backdrop-blur-sm border-2 border-white/20 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center w-24 h-24 md:w-32 md:h-32 group hover:scale-105 transition-transform cursor-pointer select-none touch-manipulation active:scale-95 hover:bg-white/30"
             onPointerDown={handleTurnButtonDown}
             onPointerUp={handleTurnButtonUp}
             onPointerLeave={handleTurnButtonLeave}
@@ -1110,6 +1104,7 @@ export default function CommanderApp() {
 
             const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
             const rotationClass = getRotationClass(idx, gameState.players.length);
+            const isSideways = rotationClass.includes('rotate-90') || rotationClass.includes('-rotate-90');
 
             // MODIFIED: Only elevate z-index if overlay is open
             const cardZIndex = overlay ? 'z-[60]' : (isDead ? 'z-0' : (isActive ? 'z-10' : 'z-0'));
@@ -1178,17 +1173,31 @@ export default function CommanderApp() {
                         )}
                       </div>
 
-                      {!isDead && !winner && (
-                        <div className="flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem] shrink-0 relative">
-                          {!menuOpen && (
-                            <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90 z-20">
-                              <Plus size={28} className="text-white/80" />
-                            </button>
-                          )}
-                          
-                          {/* EXPANDABLE MENU */}
-                          {menuOpen && (
-                            <div className="absolute bottom-2 left-2 right-2 z-30 bg-slate-950/60 backdrop-blur-md rounded-2xl p-2 border border-slate-800 shadow-2xl animate-in slide-in-from-bottom-2 duration-200 flex flex-wrap justify-center gap-2">
+                      {!isDead && !winner && !menuOpen && (
+                        <div className={
+                          isSideways 
+                          ? "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-auto z-20" 
+                          : "flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem] shrink-0 relative"
+                        }>
+                          <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90 z-20 shadow-lg border border-white/5">
+                            <Plus size={28} className="text-white/80" />
+                          </button>
+                        </div>
+                      )}
+                      
+                        
+                        {/* EXPANDABLE MENU */}
+                      {menuOpen && !isDead && !winner && (
+                          <>
+                            {/* Backdrop for Menu */}
+                            <div className="absolute inset-0 z-20" onClick={() => togglePlayerMenu(player.gameId)} />
+                            
+                            <div className={`absolute z-30 bg-slate-950/80 backdrop-blur-md rounded-2xl p-2 border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-wrap justify-center gap-2 pointer-events-auto
+                              ${isSideways 
+                                ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[200px]' 
+                                : 'bottom-2 left-2 right-2 slide-in-from-bottom-2' 
+                              }
+                            `}>
                               
                               <div className="w-full flex justify-end mb-1">
                                 <button onClick={() => togglePlayerMenu(player.gameId)} className="p-1 text-slate-400 hover:text-white bg-white/10 rounded-full">
@@ -1215,19 +1224,21 @@ export default function CommanderApp() {
                                 </button>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      )}
+                          </>
+                        )}
                     </div>
 
                     {/* OVERLAYS - INSIDE ROTATION WRAPPER so they rotate too */}
                     {overlay === 'MANA' && (
-                      <div className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 pointer-events-auto">
-                        <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white bg-black/20 rounded-full z-50"><X size={18} /></button>
-                        <h4 className="text-center font-bold text-amber-400 mb-1 text-xs flex items-center justify-center gap-1"><Sparkles size={12} /> Mana</h4>
-                        <div className="grid grid-cols-3 gap-2 flex-1 content-center">
+                      <div 
+                        className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 pointer-events-auto"
+                        onClick={(e) => { if(e.target === e.currentTarget) setOverlay(player.gameId, null); }}
+                      >
+                        <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-full z-50 transition-colors"><X size={20} /></button>
+                        <h4 className="text-center font-bold text-amber-400 mb-1 text-xs flex items-center justify-center gap-1 pointer-events-none"><Sparkles size={12} /> Mana</h4>
+                        <div className="grid grid-cols-3 gap-2 flex-1 content-center pointer-events-none">
                           {MANA_TYPES.map(type => (
-                            <div key={type.key} className={`flex flex-col items-center justify-center p-1 rounded border ${type.color}`}>
+                            <div key={type.key} className={`flex flex-col items-center justify-center p-1 rounded border pointer-events-auto ${type.color}`}>
                               <type.icon size={16} className="mb-1 opacity-80" />
                               <div className="flex items-center gap-1">
                                 <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))} className="w-5 h-5 rounded bg-black/30 font-bold text-xs">-</button>
@@ -1241,10 +1252,13 @@ export default function CommanderApp() {
                     )}
 
                     {overlay === 'CMD' && (
-                      <div className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 overflow-y-auto pointer-events-auto">
-                        <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-white bg-black/20 rounded-full z-50"><X size={18} /></button>
-                        <h4 className="text-center font-bold text-red-400 mb-2 text-xs flex items-center justify-center gap-1"><Swords size={12} /> Danni Cmd</h4>
-                        <div className="grid grid-cols-2 grid-rows-2 h-full gap-2 pb-4">
+                      <div 
+                        className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 overflow-y-auto pointer-events-auto"
+                        onClick={(e) => { if(e.target === e.currentTarget) setOverlay(player.gameId, null); }}
+                      >
+                        <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-full z-50 transition-colors"><X size={20} /></button>
+                        <h4 className="text-center font-bold text-red-400 mb-2 text-xs flex items-center justify-center gap-1 pointer-events-none"><Swords size={12} /> Danni Cmd</h4>
+                        <div className="grid grid-cols-2 grid-rows-2 h-full gap-2 pb-4 pointer-events-none">
                           {gameState.players.filter(p => p.gameId !== player.gameId).map(opponent => {
                               const currentDmg = player.commanderDamage[opponent.gameId] || 0;
                               const feedbackKey = `${player.gameId}_${opponent.gameId}`;
@@ -1253,7 +1267,7 @@ export default function CommanderApp() {
                               return (
                                 <div 
                                     key={opponent.gameId} 
-                                    className="relative flex flex-col items-center justify-center bg-black/40 rounded-lg border border-white/10 overflow-hidden select-none touch-manipulation"
+                                    className="relative flex flex-col items-center justify-center bg-black/40 rounded-lg border border-white/10 overflow-hidden select-none touch-manipulation pointer-events-auto"
                                     onPointerDown={(e) => handleCmdPointerDown(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
                                     onPointerUp={(e) => handleCmdPointerUp(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
                                     onPointerLeave={(e) => handleCmdPointerLeave(e, player.gameId, opponent.gameId)}
