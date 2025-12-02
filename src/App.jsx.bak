@@ -1,12 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Heart, 
   Shield, 
   Skull, 
   Swords, 
+  UserPlus, 
   Plus, 
   Trash2, 
+  Play, 
+  RotateCcw, 
+  ChevronRight,
   Droplet,
+  Menu,
   X,
   Zap,
   Home,
@@ -14,9 +19,12 @@ import {
   Undo2,
   Sparkles,
   Sun,
+  Cloud,
+  Moon,
   Flame,
   Trees,
   Hexagon,
+  MoreHorizontal,
   Database, 
   Users,
   History,
@@ -24,85 +32,20 @@ import {
   Save,   
   LogOut,  
   ScrollText,
+  BarChart3, 
   ArrowLeft,
   AlertTriangle,
   Clock,
   Hourglass,
-  Minus,
-  ArrowRightLeft,
-  Radiation
+  Settings,
+  Minus 
 } from 'lucide-react';
-
-// --- Interfaces ---
-
-interface PlayerData {
-  id: string;
-  name: string;
-}
-
-interface DeckData {
-  id: string;
-  commander: string;
-  owner: string;
-}
-
-interface MatchRecord {
-  id: number;
-  date: string;
-  duration: number;
-  turns: number;
-  winnerId: string;
-  winnerOriginalId: string | undefined;
-  players: {
-    name: string;
-    deckName: string;
-    gameId: string | number;
-    originalId: string | undefined;
-    avgTurnTime: number;
-  }[];
-}
-
-interface GamePlayer {
-  gameId: string | number;
-  originalId?: string;
-  name: string;
-  deckName: string;
-  life: number;
-  poison: number;
-  commanderTax: number;
-  energy: number;
-  rad: number;
-  mana: { w: number; u: number; b: number; r: number; g: number; c: number };
-  activeCounter: 'poison' | 'tax' | 'energy' | 'rad';
-  commanderDamage: Record<string, number>;
-  isDead: boolean;
-  deathReason: string | null;
-  color: string;
-  turnTimes: number[];
-}
-
-interface HistoryLog {
-  turn: number;
-  playerId: string | number;
-  diff: number;
-  timestamp: number;
-}
-
-interface GameState {
-  turnCount: number;
-  activePlayerIndex: number;
-  startingPlayerIndex: number;
-  startTime: number;
-  currentTurnStartTime: number;
-  players: GamePlayer[];
-  history: HistoryLog[];
-}
 
 // --- Utility Components ---
 
-const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }: { children: React.ReactNode, onClick?: () => void, variant?: string, className?: string, disabled?: boolean }) => {
-  const baseStyle = "px-4 py-2 rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg text-sm md:text-base relative overflow-hidden group select-none";
-  const variants: Record<string, string> = {
+const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
+  const baseStyle = "px-4 py-2 rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg text-sm md:text-base relative overflow-hidden group";
+  const variants = {
     primary: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/40 disabled:opacity-50 disabled:cursor-not-allowed",
     secondary: "bg-slate-700 hover:bg-slate-600 text-slate-100 disabled:opacity-50 border border-slate-600",
     danger: "bg-red-600 hover:bg-red-500 text-white shadow-red-900/30",
@@ -123,7 +66,13 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
   );
 };
 
-const Modal = ({ isOpen, onClose, title, children, zIndex = "z-50" }: { isOpen: boolean, onClose?: () => void, title: string, children: React.ReactNode, zIndex?: string }) => {
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-slate-800/80 backdrop-blur-md border border-slate-700 rounded-2xl p-4 shadow-xl ${className}`}>
+    {children}
+  </div>
+);
+
+const Modal = ({ isOpen, onClose, title, children, zIndex = "z-50" }) => {
   if (!isOpen) return null;
   return (
     <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200`}>
@@ -144,9 +93,9 @@ const Modal = ({ isOpen, onClose, title, children, zIndex = "z-50" }: { isOpen: 
   );
 };
 
-export default function App() {
+export default function CommanderApp() {
   // --- State: Data (Persisted) ---
-  const [storedPlayers, setStoredPlayers] = useState<PlayerData[]>(() => {
+  const [storedPlayers, setStoredPlayers] = useState(() => {
     const saved = localStorage.getItem('mtg_players');
     return saved ? JSON.parse(saved) : [
       { id: 'p1', name: 'Chandra' }, 
@@ -157,7 +106,7 @@ export default function App() {
     ];
   });
 
-  const [storedDecks, setStoredDecks] = useState<DeckData[]>(() => {
+  const [storedDecks, setStoredDecks] = useState(() => {
     const saved = localStorage.getItem('mtg_decks');
     return saved ? JSON.parse(saved) : [
       { id: 'd1', commander: 'Atraxa', owner: 'p1' },
@@ -168,7 +117,7 @@ export default function App() {
     ];
   });
 
-  const [matchHistory, setMatchHistory] = useState<MatchRecord[]>(() => {
+  const [matchHistory, setMatchHistory] = useState(() => {
     const saved = localStorage.getItem('mtg_match_history');
     return saved ? JSON.parse(saved) : [];
   });
@@ -176,20 +125,20 @@ export default function App() {
   // --- State: UI & Setup ---
   const [view, setView] = useState('SETUP');
   const [numPlayers, setNumPlayers] = useState(4);
-  const [setupSlots, setSetupSlots] = useState<Record<number, { playerId: string, deckId: string }>>({});
+  const [setupSlots, setSetupSlots] = useState({});
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [historyListOpen, setHistoryListOpen] = useState(false);
   
-  const [itemToDelete, setItemToDelete] = useState<{ type: 'player' | 'deck', id: string } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
   
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newDeckCommander, setNewDeckCommander] = useState('');
   const [newDeckOwner, setNewDeckOwner] = useState('');
 
-  const [statsPlayerId, setStatsPlayerId] = useState<string | null>(null); 
+  const [statsPlayerId, setStatsPlayerId] = useState(null); 
 
   // --- State: Active Game ---
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState({
     turnCount: 1,
     activePlayerIndex: 0,
     startingPlayerIndex: 0,
@@ -199,22 +148,21 @@ export default function App() {
     history: [] 
   });
 
-  const [swapSourceId, setSwapSourceId] = useState<string | number | null>(null);
   const [gameMenuOpen, setGameMenuOpen] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false); 
   const [gameLogOpen, setGameLogOpen] = useState(false); 
-  const [playerOverlays, setPlayerOverlays] = useState<Record<string | number, string | null>>({});
-  const [playerMenus, setPlayerMenus] = useState<Record<string | number, boolean>>({});
-  const [tapFeedback, setTapFeedback] = useState<Record<string | number, 'left' | 'right' | null>>({}); 
-  const [cmdTapFeedback, setCmdTapFeedback] = useState<Record<string, 'left' | 'right' | null>>({});
-  const [winner, setWinner] = useState<GamePlayer | null>(null); 
+  const [playerOverlays, setPlayerOverlays] = useState({});
+  const [playerMenus, setPlayerMenus] = useState({});
+  const [tapFeedback, setTapFeedback] = useState({}); 
+  const [cmdTapFeedback, setCmdTapFeedback] = useState({});
+  const [winner, setWinner] = useState(null); 
   
   const [isPortrait, setIsPortrait] = useState(false);
 
-  const longPressTimer = useRef<number | null>(null);
+  const longPressTimer = useRef(null);
   const isLongPress = useRef(false);
   
-  const turnButtonTimer = useRef<number | null>(null);
+  const turnButtonTimer = useRef(null);
   const isTurnButtonLongPress = useRef(false);
 
   // --- Effects ---
@@ -249,7 +197,7 @@ export default function App() {
   }, [gameState.players, view, winner]);
 
   // --- Helpers ---
-  const formatDuration = (ms: number) => {
+  const formatDuration = (ms) => {
     if (!ms) return '-';
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -262,7 +210,7 @@ export default function App() {
     return `${minutes}m ${seconds}s`;
   };
 
-  const formatTurnTime = (ms: number) => {
+  const formatTurnTime = (ms) => {
     if (!ms) return '0s';
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -270,13 +218,13 @@ export default function App() {
   };
 
   // --- Stats Calculation Logic ---
-  const calculateStats = (playerId: string) => {
+  const calculateStats = (playerId) => {
     const player = storedPlayers.find(p => p.id === playerId) || { name: 'Sconosciuto' };
     let totalGames = 0;
     let totalWins = 0;
     let totalTurnTime = 0;
     let totalRecordedTurns = 0;
-    const commanderStats: Record<string, { played: number, won: number }> = {}; 
+    const commanderStats = {}; 
 
     matchHistory.forEach(match => {
       const participation = match.players.find(p => p.originalId === playerId);
@@ -345,8 +293,8 @@ export default function App() {
     setNewDeckOwner('');
   };
 
-  const requestDeletePlayer = (id: string) => setItemToDelete({ type: 'player', id });
-  const requestDeleteDeck = (id: string) => setItemToDelete({ type: 'deck', id });
+  const requestDeletePlayer = (id) => setItemToDelete({ type: 'player', id });
+  const requestDeleteDeck = (id) => setItemToDelete({ type: 'deck', id });
 
   const confirmDelete = () => {
     if (!itemToDelete) return;
@@ -358,7 +306,7 @@ export default function App() {
     setItemToDelete(null);
   };
 
-  const handleSlotChange = (index: number, field: string, value: string) => {
+  const handleSlotChange = (index, field, value) => {
     setSetupSlots(prev => ({
       ...prev,
       [index]: { ...prev[index], [field]: value }
@@ -368,7 +316,6 @@ export default function App() {
   const isSetupValid = () => {
     if (Object.keys(setupSlots).length < numPlayers) return false;
     for (let i = 0; i < numPlayers; i++) {
-      // @ts-ignore
       if (!setupSlots[i]?.playerId || !setupSlots[i]?.deckId) return false;
     }
     const selectedPlayers = Object.values(setupSlots).map(s => s.playerId);
@@ -380,12 +327,11 @@ export default function App() {
 
   const getInitialMana = () => ({ w: 0, u: 0, b: 0, r: 0, g: 0, c: 0 });
 
-  const initGame = (players: GamePlayer[]) => {
+  const initGame = (players) => {
     const startIndex = Math.floor(Math.random() * players.length);
     setPlayerOverlays({}); 
     setPlayerMenus({});
     setWinner(null);
-    setSwapSourceId(null);
 
     const now = Date.now();
 
@@ -402,16 +348,14 @@ export default function App() {
   };
 
   const startGenericGame = () => {
-    const players: GamePlayer[] = Array.from({ length: 4 }).map((_, i) => ({
+    const players = Array.from({ length: 4 }).map((_, i) => ({
       gameId: i,
       originalId: `gen${i}`,
       name: `Giocatore ${i + 1}`,
       deckName: `Commander ${i + 1}`,
       life: 40,
       poison: 0,
-      commanderTax: 0,
-      energy: 0,
-      rad: 0,
+      commanderTax: 0, 
       mana: getInitialMana(),
       activeCounter: 'poison', 
       commanderDamage: {},
@@ -424,32 +368,28 @@ export default function App() {
   };
 
   const startGame = () => {
-    const players: GamePlayer[] = [];
+    const players = [];
     for (let i = 0; i < numPlayers; i++) {
       const slot = setupSlots[i];
       const pData = storedPlayers.find(p => p.id === slot.playerId);
       const dData = storedDecks.find(d => d.id === slot.deckId);
       
-      if (pData && dData) {
-        players.push({
-          gameId: i,
-          originalId: pData.id,
-          name: pData.name,
-          deckName: dData.commander,
-          life: 40,
-          poison: 0,
-          commanderTax: 0,
-          energy: 0,
-          rad: 0,
-          mana: getInitialMana(),
-          activeCounter: 'poison', 
-          commanderDamage: {},
-          isDead: false,
-          deathReason: null,
-          color: generateColor(i),
-          turnTimes: []
-        });
-      }
+      players.push({
+        gameId: i,
+        originalId: pData.id,
+        name: pData.name,
+        deckName: dData.commander,
+        life: 40,
+        poison: 0,
+        commanderTax: 0,
+        mana: getInitialMana(),
+        activeCounter: 'poison', 
+        commanderDamage: {},
+        isDead: false,
+        deathReason: null,
+        color: generateColor(i),
+        turnTimes: []
+      });
     }
     initGame(players);
   };
@@ -459,7 +399,7 @@ export default function App() {
 
     const duration = Date.now() - gameState.startTime;
 
-    const newMatch: MatchRecord = {
+    const newMatch = {
       id: Date.now(),
       date: new Date().toISOString(),
       duration: duration,
@@ -477,7 +417,7 @@ export default function App() {
           avgTurnTime: avgTime
         };
       }),
-      winnerId: String(winner.gameId),
+      winnerId: winner.gameId,
       winnerOriginalId: winner.originalId, 
       turns: gameState.turnCount
     };
@@ -494,7 +434,7 @@ export default function App() {
     }
   };
 
-  const logLifeChange = (prevHistory: HistoryLog[], gameId: string | number, diff: number, currentTurn: number) => {
+  const logLifeChange = (prevHistory, gameId, diff, currentTurn) => {
     const now = Date.now();
     const lastEntry = prevHistory[prevHistory.length - 1];
 
@@ -521,7 +461,7 @@ export default function App() {
     }
   };
 
-  const changePlayerLife = (gameId: string | number, diff: number) => {
+  const changePlayerLife = (gameId, diff) => {
     setGameState(prev => {
       const newPlayers = prev.players.map(p => {
         if (p.gameId === gameId) {
@@ -535,7 +475,7 @@ export default function App() {
     });
   };
 
-  const checkDeath = (player: GamePlayer) => {
+  const checkDeath = (player) => {
     if (player.isDead) return player;
     let dead = false;
     let reason = null;
@@ -547,7 +487,7 @@ export default function App() {
     return player;
   };
 
-  const updatePlayer = (gameId: string | number, updater: (p: GamePlayer) => GamePlayer) => {
+  const updatePlayer = (gameId, updater) => {
     setGameState(prev => {
       const newPlayers = prev.players.map(p => {
         if (p.gameId === gameId) {
@@ -560,7 +500,7 @@ export default function App() {
     });
   };
 
-  const resurrectPlayer = (gameId: string | number) => {
+  const resurrectPlayer = (gameId) => {
     setGameState(prev => {
       const newPlayers = prev.players.map(p => {
         if (p.gameId === gameId) return { ...p, isDead: false, deathReason: null };
@@ -571,26 +511,21 @@ export default function App() {
     if (winner) setWinner(null);
   };
 
-  const togglePlayerCounter = (gameId: string | number) => {
-    updatePlayer(gameId, p => {
-      const counters: GamePlayer['activeCounter'][] = ['poison', 'tax', 'energy', 'rad'];
-      const currentIndex = counters.indexOf(p.activeCounter);
-      const nextIndex = (currentIndex + 1) % counters.length;
-      return {
-        ...p,
-        activeCounter: counters[nextIndex]
-      };
-    });
+  const togglePlayerCounter = (gameId) => {
+    updatePlayer(gameId, p => ({
+      ...p,
+      activeCounter: p.activeCounter === 'poison' ? 'tax' : 'poison'
+    }));
   };
 
-  const setOverlay = (gameId: string | number, type: string | null) => {
+  const setOverlay = (gameId, type) => {
     setPlayerOverlays(prev => ({
       ...prev,
       [gameId]: prev[gameId] === type ? null : type 
     }));
   };
 
-  const togglePlayerMenu = (gameId: string | number) => {
+  const togglePlayerMenu = (gameId) => {
     setPlayerMenus(prev => ({
       ...prev,
       [gameId]: !prev[gameId]
@@ -646,44 +581,11 @@ export default function App() {
     });
   };
 
-  // --- Swap Player Logic ---
-  const handleSwapSelection = (gameId: string | number) => {
-    if (swapSourceId === null) {
-      // First click: select the player to swap
-      setSwapSourceId(gameId);
-    } else if (swapSourceId === gameId) {
-      // Clicked same player: cancel swap
-      setSwapSourceId(null);
-    } else {
-      // Clicked different player: perform swap
-      setGameState(prev => {
-        const p1Index = prev.players.findIndex(p => p.gameId === swapSourceId);
-        const p2Index = prev.players.findIndex(p => p.gameId === gameId);
-        
-        if (p1Index === -1 || p2Index === -1) return prev;
-
-        const newPlayers = [...prev.players];
-        // Swap elements at indices
-        [newPlayers[p1Index], newPlayers[p2Index]] = [newPlayers[p2Index], newPlayers[p1Index]];
-
-        // NOTE: We do NOT update activePlayerIndex or startingPlayerIndex. 
-        // This ensures the "active turn" remains at the physical seat (index) 
-        // even though a different player (object) is now in that slot.
-        
-        return {
-          ...prev,
-          players: newPlayers
-        };
-      });
-      setSwapSourceId(null);
-    }
-  };
-
-  const handlePointerDown = (e: React.PointerEvent, gameId: string | number, side: 'left' | 'right') => {
+  const handlePointerDown = (e, gameId, side) => {
     isLongPress.current = false;
     setTapFeedback(prev => ({ ...prev, [gameId]: side }));
 
-    longPressTimer.current = window.setTimeout(() => {
+    longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
       changePlayerLife(gameId, side === 'right' ? 10 : -10);
       if (navigator.vibrate) navigator.vibrate(50);
@@ -691,7 +593,7 @@ export default function App() {
     }, 500);
   };
 
-  const handlePointerUp = (e: React.PointerEvent, gameId: string | number, side: 'left' | 'right') => {
+  const handlePointerUp = (e, gameId, side) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -702,7 +604,7 @@ export default function App() {
     setTapFeedback(prev => ({ ...prev, [gameId]: null }));
   };
 
-  const handlePointerLeave = (e: React.PointerEvent, gameId: string | number) => {
+  const handlePointerLeave = (e, gameId) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -710,12 +612,12 @@ export default function App() {
     setTapFeedback(prev => ({ ...prev, [gameId]: null }));
   };
 
-  const handleCmdPointerDown = (e: React.PointerEvent, playerId: string | number, opponentId: string | number, side: 'left' | 'right') => {
+  const handleCmdPointerDown = (e, playerId, opponentId, side) => {
     isLongPress.current = false;
     const feedbackKey = `${playerId}_${opponentId}`;
     setCmdTapFeedback(prev => ({ ...prev, [feedbackKey]: side }));
 
-    longPressTimer.current = window.setTimeout(() => {
+    longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
       updatePlayer(playerId, p => {
           const currentDmg = p.commanderDamage[opponentId] || 0;
@@ -735,7 +637,7 @@ export default function App() {
     }, 500);
   };
 
-  const handleCmdPointerUp = (e: React.PointerEvent, playerId: string | number, opponentId: string | number, side: 'left' | 'right') => {
+  const handleCmdPointerUp = (e, playerId, opponentId, side) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -759,7 +661,7 @@ export default function App() {
     setCmdTapFeedback(prev => ({ ...prev, [feedbackKey]: null }));
   };
   
-  const handleCmdPointerLeave = (e: React.PointerEvent, playerId: string | number, opponentId: string | number) => {
+  const handleCmdPointerLeave = (e, playerId, opponentId) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -768,17 +670,17 @@ export default function App() {
     setCmdTapFeedback(prev => ({ ...prev, [feedbackKey]: null }));
   };
 
-  const handleTurnButtonDown = (e: React.PointerEvent) => {
+  const handleTurnButtonDown = (e) => {
     e.preventDefault(); 
     isTurnButtonLongPress.current = false;
-    turnButtonTimer.current = window.setTimeout(() => {
+    turnButtonTimer.current = setTimeout(() => {
       isTurnButtonLongPress.current = true;
       if (navigator.vibrate) navigator.vibrate(50);
       setGameMenuOpen(true);
     }, 600);
   };
 
-  const handleTurnButtonUp = (e: React.PointerEvent) => {
+  const handleTurnButtonUp = (e) => {
     e.preventDefault();
     if (turnButtonTimer.current) {
       clearTimeout(turnButtonTimer.current);
@@ -790,7 +692,7 @@ export default function App() {
     isTurnButtonLongPress.current = false;
   };
 
-  const handleTurnButtonLeave = (e: React.PointerEvent) => {
+  const handleTurnButtonLeave = (e) => {
     if (turnButtonTimer.current) {
       clearTimeout(turnButtonTimer.current);
       turnButtonTimer.current = null;
@@ -798,7 +700,7 @@ export default function App() {
     isTurnButtonLongPress.current = false;
   };
 
-  const generateColor = (index: number) => {
+  const generateColor = (index) => {
     const colors = [
       'from-red-900 to-red-950',
       'from-blue-900 to-blue-950',
@@ -819,7 +721,7 @@ export default function App() {
     { key: 'c', color: 'bg-slate-500/20 text-slate-100 border-slate-500/50', icon: Hexagon }, 
   ];
 
-  const getGridClass = (count: number) => {
+  const getGridClass = (count) => {
     switch(count) {
       case 2: return 'grid-cols-2'; 
       case 3: return 'grid-cols-3'; 
@@ -830,13 +732,13 @@ export default function App() {
     }
   };
 
-  const getCellSpanClass = (index: number, totalPlayers: number) => {
+  const getCellSpanClass = (index, totalPlayers) => {
     if (totalPlayers === 3 && index === 2) return '';
     if (totalPlayers === 5 && index === 2) return 'row-span-2';
     return '';
   };
 
-  const getRotationClass = (index: number, totalPlayers: number) => {
+  const getRotationClass = (index, totalPlayers) => {
     switch(totalPlayers) {
       case 2:
         if (index === 0) return 'rotate-90';
@@ -867,7 +769,7 @@ export default function App() {
   const containerStyle = (view === 'GAME' && isPortrait) ? {
     width: '100vh',
     height: '100vw',
-    position: 'absolute' as const,
+    position: 'absolute',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%) rotate(90deg)',
@@ -1175,21 +1077,14 @@ export default function App() {
           }
 
           return displayPlayers.map((player, idx) => {
-            // FIX: Check if this player is the one currently in the active player's seat
-            const activePlayer = gameState.players[gameState.activePlayerIndex];
-            const isActive = activePlayer && player.gameId === activePlayer.gameId;
-
+            const isActive = player.gameId === gameState.activePlayerIndex;
             const isDead = player.isDead;
             const overlay = playerOverlays[player.gameId]; 
             const feedback = tapFeedback[player.gameId];
             const cmdFeedback = cmdTapFeedback; // Access global state directly
             const menuOpen = playerMenus[player.gameId];
             const activeMode = player.activeCounter; 
-            const isSwapSource = swapSourceId === player.gameId;
-            const isSwapMode = swapSourceId !== null;
-
-            let counterColor, bgClass, iconColor, currentValue, currentIcon;
-            let fieldName: 'poison' | 'commanderTax' | 'energy' | 'rad';
+            let counterColor, bgClass, iconColor, currentValue, currentIcon, fieldName;
 
             if (activeMode === 'poison') {
               bgClass = 'bg-green-950/40 border-green-500/30';
@@ -1198,33 +1093,20 @@ export default function App() {
               currentValue = player.poison;
               currentIcon = <Droplet size={24} className="md:w-6 md:h-6" />;
               fieldName = 'poison';
-            } else if (activeMode === 'tax') {
+            } else {
               bgClass = 'bg-cyan-950/40 border-cyan-500/30';
               iconColor = 'text-cyan-400';
               counterColor = 'text-cyan-200';
               currentValue = player.commanderTax;
               currentIcon = <Gem size={24} className="md:w-6 md:h-6" />;
               fieldName = 'commanderTax';
-            } else if (activeMode === 'energy') {
-              bgClass = 'bg-yellow-950/40 border-yellow-500/30';
-              iconColor = 'text-yellow-400';
-              counterColor = 'text-yellow-200';
-              currentValue = player.energy;
-              currentIcon = <Zap size={24} className="md:w-6 md:h-6" />;
-              fieldName = 'energy';
-            } else { // rad
-              bgClass = 'bg-orange-950/40 border-orange-500/30';
-              iconColor = 'text-orange-500';
-              counterColor = 'text-orange-200';
-              currentValue = player.rad;
-              currentIcon = <Radiation size={24} className="md:w-6 md:h-6" />;
-              fieldName = 'rad';
             }
 
             const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
             const rotationClass = getRotationClass(idx, gameState.players.length);
             const isSideways = rotationClass.includes('rotate-90') || rotationClass.includes('-rotate-90');
 
+            // MODIFIED: Only elevate z-index if overlay is open
             const cardZIndex = overlay ? 'z-[60]' : (isDead ? 'z-0' : (isActive ? 'z-10' : 'z-0'));
 
             return (
@@ -1234,7 +1116,7 @@ export default function App() {
                   isDead ? 'border-red-900/50 grayscale opacity-60' : 
                   isActive ? 'border-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.3)]' : 
                   'border-slate-800'
-                } ${cardZIndex} ${isSwapSource ? 'ring-4 ring-indigo-500 ring-offset-2 ring-offset-slate-900 animate-pulse' : ''}`}
+                } ${cardZIndex}`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${player.color} opacity-40 z-0`} />
                 
@@ -1242,7 +1124,7 @@ export default function App() {
                 <div className={`absolute inset-0 flex flex-col ${rotationClass} transition-transform duration-300`}>
                   
                     {/* Interactive Tap Zones */}
-                    {!isDead && !overlay && !winner && !isSwapMode && (
+                    {!isDead && !overlay && !winner && (
                       <div className="absolute top-14 bottom-16 left-0 right-0 z-10 flex">
                         <div 
                           className={`w-1/2 h-full border-r border-white/5 bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'left' ? 'bg-white/10' : ''}`}
@@ -1263,17 +1145,7 @@ export default function App() {
 
                     {/* Layer 3: Content */}
                     <div className="relative z-20 h-full flex flex-col pointer-events-none">
-                      
-                      {/* Name Bar - Clickable for Swap */}
-                      <div 
-                        className={`relative px-3 py-2 flex items-center justify-center bg-black/20 pointer-events-auto min-h-[3.5rem] shrink-0 cursor-pointer transition-colors ${isSwapMode && !isSwapSource ? 'hover:bg-indigo-500/30 border-2 border-dashed border-indigo-400/50' : ''}`}
-                        onClick={() => handleSwapSelection(player.gameId)}
-                      >
-                         {isSwapMode && (
-                            <div className="absolute left-2 text-indigo-300 animate-pulse">
-                                <ArrowRightLeft size={16} />
-                            </div>
-                         )}
+                      <div className="relative px-3 py-2 flex items-center justify-center bg-black/20 pointer-events-auto min-h-[3.5rem] shrink-0">
                         <div className="flex flex-col items-center justify-center w-full"> 
                             <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
                             <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
@@ -1295,13 +1167,13 @@ export default function App() {
                             </button>
                           </div>
                         ) : (
-                          <div className={`text-[20vmin] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none leading-none ${isSwapMode ? 'opacity-30' : ''}`}>
+                          <div className="text-[20vmin] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none leading-none">
                             {player.life}
                           </div>
                         )}
                       </div>
 
-                      {!isDead && !winner && !menuOpen && !isSwapMode && (
+                      {!isDead && !winner && !menuOpen && (
                         <div className={
                           isSideways 
                           ? "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-auto z-20" 
@@ -1369,9 +1241,9 @@ export default function App() {
                             <div key={type.key} className={`flex flex-col items-center justify-center p-1 rounded border pointer-events-auto ${type.color}`}>
                               <type.icon size={16} className="mb-1 opacity-80" />
                               <div className="flex items-center gap-1">
-                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key as keyof typeof p.mana]: Math.max(0, p.mana[type.key as keyof typeof p.mana] - 1) } }))} className="w-12 h-12 rounded bg-black/30 font-bold text-xs flex items-center justify-center transition-colors hover:bg-black/50 active:scale-95">-</button>
-                                <span className="font-bold w-4 text-center text-xs">{player.mana[type.key as keyof typeof player.mana]}</span>
-                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key as keyof typeof p.mana]: p.mana[type.key as keyof typeof p.mana] + 1 } }))} className="w-12 h-12 rounded bg-black/30 font-bold text-xs flex items-center justify-center transition-colors hover:bg-black/50 active:scale-95">+</button>
+                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))} className="w-5 h-5 rounded bg-black/30 font-bold text-xs">-</button>
+                                <span className="font-bold w-4 text-center text-xs">{player.mana[type.key]}</span>
+                                <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))} className="w-5 h-5 rounded bg-black/30 font-bold text-xs">+</button>
                               </div>
                             </div>
                           ))}
