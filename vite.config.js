@@ -12,7 +12,7 @@ export default defineConfig({
             manifest: {
                 name: 'Aegis LT',
                 short_name: 'Aegis LT',
-                description: 'Tracker vita e risorse per MTG Commander',
+                description: 'Life Tracker for MTG Commander',
                 theme_color: '#0f172a',
                 icons: [
                     {

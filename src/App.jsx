@@ -822,9 +822,12 @@ export default function App() {
 
         <div className="relative p-4 flex items-center justify-between bg-slate-900/50 border-b border-slate-800 shrink-0 z-10 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-              Commander Tracker
-            </h1>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent leading-none">
+                Aegis LT
+              </h1>
+              <span className="text-[10px] text-slate-500 font-medium tracking-wide">Your MTG life tracker App</span>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => { setStatsPlayerId(null); setHistoryListOpen(true); }} className="p-2">
