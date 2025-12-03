@@ -10,8 +10,8 @@ export default defineConfig({
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
             manifest: {
-                name: 'MTG Commander Tracker',
-                short_name: 'MTG Tracker',
+                name: 'Aegis LT',
+                short_name: 'Aegis LT',
                 description: 'Tracker vita e risorse per MTG Commander',
                 theme_color: '#0f172a',
                 icons: [
