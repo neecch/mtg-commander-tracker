@@ -1219,7 +1219,7 @@ export default function App() {
                           <ArrowRightLeft size={16} />
                         </div>
                       )}
-                      <div className={`flex items-center justify-center w-full gap-1 ${isSideways ? (isRotated90 ? 'rotate-90' : '-rotate-90') : 'flex-col'
+                      <div className={`flex items-center justify-center gap-1 ${isSideways ? (isRotated90 ? 'rotate-90 w-64' : '-rotate-90 w-64') : 'flex-col w-full'
                         }`}>
                         <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
                         <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
@@ -1251,7 +1251,7 @@ export default function App() {
                     {!isDead && !winner && !menuOpen && !isSwapMode && (
                       <div className={
                         isSideways
-                          ? "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-auto z-20"
+                          ? `absolute ${isRotated90 ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 pointer-events-auto z-20`
                           : "flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem] shrink-0 relative"
                       }>
                         <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90 z-20 shadow-lg border border-white/5">
