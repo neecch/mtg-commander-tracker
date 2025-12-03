@@ -3,12 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
+  "scripts": {
     "dev": "vite",
-    "build": "npm run permissions && vite build", 
+    "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "permissions": "chmod +x node_modules/.bin/vite" 
+    "permissions": "chmod +x node_modules/.bin/vite"
   },
   "dependencies": {
     "lucide-react": "^0.309.0",
@@ -26,6 +26,7 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
