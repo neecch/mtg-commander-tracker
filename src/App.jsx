@@ -338,7 +338,8 @@ export default function App() {
   };
 
   const startGenericGame = () => {
-    const players = Array.from({ length: numPlayers }).map((_, i) => ({
+    const validNumPlayers = Math.max(2, Math.min(6, Number(numPlayers) || 4));
+    const players = Array.from({ length: validNumPlayers }).map((_, i) => ({
       gameId: i,
       originalId: `gen${i}`,
       name: `Giocatore ${i + 1}`,
@@ -1481,4 +1482,4 @@ export default function App() {
 
     </div>
   );
-}
+} export default App;
