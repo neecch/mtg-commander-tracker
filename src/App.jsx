@@ -111,7 +111,6 @@ export default function App() {
   // --- State: UI & Setup ---
   const [view, setView] = useState('SETUP');
   const [numPlayers, setNumPlayers] = useState(4);
-  const [initialLife, setInitialLife] = useState(40);
   const [setupSlots, setSetupSlots] = useState({});
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [historyListOpen, setHistoryListOpen] = useState(false);
@@ -144,7 +143,6 @@ export default function App() {
   const [tapFeedback, setTapFeedback] = useState({});
   const [cmdTapFeedback, setCmdTapFeedback] = useState({});
   const [winner, setWinner] = useState(null);
-  const [manaOverlayOpen, setManaOverlayOpen] = useState(false);
 
   const [isPortrait, setIsPortrait] = useState(false);
 
@@ -338,13 +336,12 @@ export default function App() {
   };
 
   const startGenericGame = () => {
-    const validNumPlayers = Math.max(2, Math.min(6, Number(numPlayers) || 4));
-    const players = Array.from({ length: validNumPlayers }).map((_, i) => ({
+    const players = Array.from({ length: numPlayers }).map((_, i) => ({
       gameId: i,
       originalId: `gen${i}`,
       name: `Giocatore ${i + 1}`,
       deckName: `Commander ${i + 1}`,
-      life: initialLife,
+      life: 40,
       poison: 0,
       commanderTax: 0,
       energy: 0,
@@ -373,7 +370,7 @@ export default function App() {
           originalId: pData.id,
           name: pData.name,
           deckName: dData.commander,
-          life: initialLife,
+          life: 40,
           poison: 0,
           commanderTax: 0,
           energy: 0,
@@ -541,14 +538,19 @@ export default function App() {
       const turnDuration = now - prev.currentTurnStartTime;
 
       const updatedPlayers = prev.players.map((p, i) => {
-        let newPlayerState = { ...p, mana: getInitialMana() };
-
         if (i === prev.activePlayerIndex) {
+          const newPlayerState = {
+            ...p,
+            mana: getInitialMana()
+          };
+
           if (prev.turnCount >= 3) {
             newPlayerState.turnTimes = [...(p.turnTimes || []), turnDuration];
           }
+
+          return newPlayerState;
         }
-        return newPlayerState;
+        return p;
       });
 
       let nextIndex = (prev.activePlayerIndex + 1) % prev.players.length;
@@ -839,30 +841,12 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 z-10 pb-24 overscroll-contain">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 flex gap-2">
-              <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase">Giocatori</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setNumPlayers(Math.max(2, numPlayers - 1))} className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">-</button>
-                  <span className="font-mono font-bold text-2xl text-indigo-400 w-6 text-center">{numPlayers}</span>
-                  <button onClick={() => setNumPlayers(Math.min(6, numPlayers + 1))} className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">+</button>
-                </div>
-              </div>
-
-              {/* Initial Life */}
-              <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase">Vita Iniziale</span>
-                <div className="flex items-center gap-1">
-                  {[20, 40, 60].map(life => (
-                    <button
-                      key={life}
-                      onClick={() => setInitialLife(life)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${initialLife === life ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-                    >
-                      {life}
-                    </button>
-                  ))}
-                </div>
+            <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
+              <span className="text-xs font-bold text-slate-400 uppercase">Giocatori</span>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setNumPlayers(Math.max(2, numPlayers - 1))} className="w-12 h-12 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">-</button>
+                <span className="font-mono font-bold text-3xl text-indigo-400">{numPlayers}</span>
+                <button onClick={() => setNumPlayers(Math.min(6, numPlayers + 1))} className="w-12 h-12 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">+</button>
               </div>
             </div>
             <div className="flex-1">
@@ -1067,15 +1051,6 @@ export default function App() {
 
         {/* Center Control */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center pointer-events-none">
-          {/* Global Mana Button */}
-          <div className="absolute left-[-80px] pointer-events-auto">
-            <button
-              onClick={() => setManaOverlayOpen(true)}
-              className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-600 flex items-center justify-center text-amber-400 shadow-lg hover:bg-slate-700 hover:scale-105 transition-all"
-            >
-              <Sparkles size={20} />
-            </button>
-          </div>
           <div
             className="pointer-events-auto bg-white/20 backdrop-blur-sm border-2 border-white/20 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center w-24 h-24 md:w-32 md:h-32 group hover:scale-105 transition-transform cursor-pointer select-none touch-manipulation active:scale-95 hover:bg-white/30"
             onPointerDown={handleTurnButtonDown}
@@ -1184,7 +1159,11 @@ export default function App() {
 
             const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
             const rotationClass = getRotationClass(idx, gameState.players.length);
-            const isSideways = rotationClass.includes('rotate-90') || rotationClass.includes('-rotate-90');
+            // New Rotation Logic
+            const isRotated90 = rotationClass === 'rotate-90';
+            const isRotatedMinus90 = rotationClass === '-rotate-90';
+            const isRotated180 = rotationClass === 'rotate-180';
+            const isSideways = isRotated90 || isRotatedMinus90;
 
             const cardZIndex = overlay ? 'z-[60]' : (isDead ? 'z-0' : (isActive ? 'z-10' : 'z-0'));
 
@@ -1199,11 +1178,15 @@ export default function App() {
                 <div className={`absolute inset-0 bg-gradient-to-br ${player.color} opacity-40 z-0`} />
 
                 {/* ROTATING CONTENT WRAPPER */}
-                <div className={`absolute inset-0 flex flex-col ${rotationClass} transition-transform duration-300`}>
+                <div className={`absolute inset-0 flex ${isRotated90 ? 'flex-row-reverse' :
+                  isRotatedMinus90 ? 'flex-row' :
+                    isRotated180 ? 'flex-col rotate-180' :
+                      'flex-col'
+                  } transition-transform duration-300`}>
 
                   {/* Interactive Tap Zones */}
                   {!isDead && !overlay && !winner && !isSwapMode && (
-                    <div className="absolute top-14 bottom-16 left-0 right-0 z-10 flex">
+                    <div className={`absolute z-10 flex ${isSideways ? 'flex-col inset-y-0 left-16 right-16' : 'flex-row inset-x-0 top-14 bottom-16'}`}>
                       <div
                         className={`w-1/2 h-full border-r border-white/5 bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'left' ? 'bg-white/10' : ''}`}
                         onPointerDown={(e) => handlePointerDown(e, player.gameId, 'left')}
@@ -1222,11 +1205,13 @@ export default function App() {
                   )}
 
                   {/* Layer 3: Content */}
-                  <div className="relative z-20 h-full flex flex-col pointer-events-none">
+                  <div className={`relative z-20 flex-1 flex ${isSideways ? (isRotated90 ? 'flex-row-reverse' : 'flex-row') : 'flex-col'
+                    } pointer-events-none w-full h-full`}>
 
                     {/* Name Bar - Clickable for Swap */}
                     <div
-                      className={`relative px-3 py-2 flex items-center justify-center bg-black/20 pointer-events-auto min-h-[3.5rem] shrink-0 cursor-pointer transition-colors ${isSwapMode && !isSwapSource ? 'hover:bg-indigo-500/30 border-2 border-dashed border-indigo-400/50' : ''}`}
+                      className={`relative flex items-center justify-center bg-black/20 pointer-events-auto shrink-0 cursor-pointer transition-colors ${isSideways ? 'w-14 h-full flex-col py-4 px-1' : 'w-full min-h-[3.5rem] flex-row px-3 py-2'
+                        } ${isSwapMode && !isSwapSource ? 'hover:bg-indigo-500/30 border-2 border-dashed border-indigo-400/50' : ''}`}
                       onClick={() => handleSwapSelection(player.gameId)}
                     >
                       {isSwapMode && (
@@ -1234,7 +1219,8 @@ export default function App() {
                           <ArrowRightLeft size={16} />
                         </div>
                       )}
-                      <div className={`flex flex-col items-center justify-center ${isSideways ? 'w-64' : 'w-full'}`}>
+                      <div className={`flex items-center justify-center gap-1 ${isSideways ? (isRotated90 ? 'rotate-90 w-64' : '-rotate-90 w-64') : 'flex-col w-full'
+                        }`}>
                         <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
                         <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
                           <Shield size={10} /> {player.deckName}
@@ -1255,7 +1241,8 @@ export default function App() {
                           </button>
                         </div>
                       ) : (
-                        <div className={`text-[20vmin] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none leading-none ${isSwapMode ? 'opacity-30' : ''}`}>
+                        <div className={`text-[20vmin] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none leading-none ${isSwapMode ? 'opacity-30' : ''} ${isRotated90 ? 'rotate-90' : isRotatedMinus90 ? '-rotate-90' : ''
+                          }`}>
                           {player.life}
                         </div>
                       )}
@@ -1282,7 +1269,7 @@ export default function App() {
 
                         <div className={`absolute z-30 bg-slate-950/80 backdrop-blur-md rounded-2xl p-2 border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-wrap justify-center gap-2 pointer-events-auto
                               ${isSideways
-                            ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[200px]'
+                            ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[200px] ' + (isRotated90 ? 'rotate-90' : '-rotate-90')
                             : 'bottom-2 left-2 right-2 slide-in-from-bottom-2'
                           }
                             `}>
@@ -1294,7 +1281,9 @@ export default function App() {
                           </div>
 
                           <div className="flex gap-3 items-center justify-center w-full flex-wrap">
-
+                            <button onClick={() => setOverlay(player.gameId, 'MANA')} className={`flex items-center justify-center w-12 h-12 rounded-full border transition-all shrink-0 ${overlay === 'MANA' || Object.values(player.mana).some(v => v > 0) ? 'bg-amber-600 border-amber-400 text-white' : 'bg-slate-900/50 border-slate-700/30 text-slate-400'}`}>
+                              <Sparkles size={24} />
+                            </button>
 
                             <div className={`flex items-center gap-1 px-1 rounded-full border transition-colors duration-300 h-12 shrink-0 ${bgClass}`}>
                               <button onClick={() => togglePlayerCounter(player.gameId)} className={`p-1 rounded-full ${iconColor}`}>
@@ -1419,40 +1408,6 @@ export default function App() {
         )}
       </Modal>
 
-      {/* Mana Overlay */}
-      {manaOverlayOpen && (
-        <div
-          className="absolute inset-0 z-[70] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-200 pointer-events-auto"
-          onClick={(e) => { if (e.target === e.currentTarget) setManaOverlayOpen(false); }}
-        >
-          <button onClick={() => setManaOverlayOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white"><X size={24} /></button>
-          <h2 className="text-2xl font-bold text-amber-400 mb-6 flex items-center gap-2"><Sparkles /> Gestione Mana - {gameState.players[gameState.activePlayerIndex]?.name}</h2>
-
-          <div className="grid grid-cols-3 gap-4 w-full max-w-md">
-            {MANA_TYPES.map(type => {
-              const activePlayer = gameState.players[gameState.activePlayerIndex];
-              if (!activePlayer) return null;
-              return (
-                <div key={type.key} className={`flex flex-col items-center justify-center p-4 rounded-xl border ${type.color} bg-opacity-20`}>
-                  <type.icon size={32} className="mb-2 opacity-80" />
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => updatePlayer(activePlayer.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))}
-                      className="w-12 h-12 rounded-lg bg-black/40 font-bold text-xl flex items-center justify-center hover:bg-black/60 active:scale-95"
-                    >-</button>
-                    <span className="font-bold text-2xl w-8 text-center">{activePlayer.mana[type.key]}</span>
-                    <button
-                      onClick={() => updatePlayer(activePlayer.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))}
-                      className="w-12 h-12 rounded-lg bg-black/40 font-bold text-xl flex items-center justify-center hover:bg-black/60 active:scale-95"
-                    >+</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* In-Game Log Modal (UNCHANGED) */}
       <Modal isOpen={gameLogOpen} onClose={() => setGameLogOpen(false)} title="Log Partita Corrente">
         <div className="space-y-4">
@@ -1482,4 +1437,4 @@ export default function App() {
 
     </div>
   );
-} export default App;
+}
