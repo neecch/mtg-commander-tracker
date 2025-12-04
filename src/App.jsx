@@ -111,6 +111,7 @@ export default function App() {
   // --- State: UI & Setup ---
   const [view, setView] = useState('SETUP');
   const [numPlayers, setNumPlayers] = useState(4);
+  const [initialLife, setInitialLife] = useState(40);
   const [setupSlots, setSetupSlots] = useState({});
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [historyListOpen, setHistoryListOpen] = useState(false);
@@ -341,7 +342,7 @@ export default function App() {
       originalId: `gen${i}`,
       name: `Giocatore ${i + 1}`,
       deckName: `Commander ${i + 1}`,
-      life: 40,
+      life: initialLife,
       poison: 0,
       commanderTax: 0,
       energy: 0,
@@ -370,7 +371,7 @@ export default function App() {
           originalId: pData.id,
           name: pData.name,
           deckName: dData.commander,
-          life: 40,
+          life: initialLife,
           poison: 0,
           commanderTax: 0,
           energy: 0,
@@ -841,13 +842,22 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 z-10 pb-24 overscroll-contain">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
+            <div className="flex-[0.8] bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
               <span className="text-xs font-bold text-slate-400 uppercase">Giocatori</span>
               <div className="flex items-center gap-3">
                 <button onClick={() => setNumPlayers(Math.max(2, numPlayers - 1))} className="w-12 h-12 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">-</button>
                 <span className="font-mono font-bold text-3xl text-indigo-400">{numPlayers}</span>
                 <button onClick={() => setNumPlayers(Math.min(6, numPlayers + 1))} className="w-12 h-12 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">+</button>
               </div>
+            </div>
+            <div className="flex-[0.6] bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
+              <span className="text-xs font-bold text-slate-400 uppercase">Vita Iniziale</span>
+              <button
+                onClick={() => setInitialLife(prev => prev === 20 ? 40 : prev === 40 ? 60 : 20)}
+                className="w-full h-12 flex items-center justify-center bg-slate-800 rounded-lg text-indigo-400 hover:text-white hover:bg-slate-700 transition-all font-mono font-bold text-2xl"
+              >
+                {initialLife}
+              </button>
             </div>
             <div className="flex-1">
               <button
