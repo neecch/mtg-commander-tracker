@@ -338,7 +338,7 @@ export default function App() {
   };
 
   const startGenericGame = () => {
-    const players = Array.from({ length: 4 }).map((_, i) => ({
+    const players = Array.from({ length: numPlayers }).map((_, i) => ({
       gameId: i,
       originalId: `gen${i}`,
       name: `Giocatore ${i + 1}`,
@@ -838,294 +838,252 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 z-10 pb-24 overscroll-contain">
           <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 flex gap-2">
-                <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase">Giocatori</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setNumPlayers(Math.max(2, numPlayers - 1))} className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">-</button>
-                    <span className="font-mono font-bold text-2xl text-indigo-400 w-6 text-center">{numPlayers}</span>
-                    <button onClick={() => setNumPlayers(Math.min(6, numPlayers + 1))} className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">+</button>
+            <div className="flex-1 flex gap-2">
+              <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
+                <span className="text-xs font-bold text-slate-400 uppercase">Giocatori</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setNumPlayers(Math.max(2, numPlayers - 1))} className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">-</button>
+                  <span className="font-mono font-bold text-2xl text-indigo-400 w-6 text-center">{numPlayers}</span>
+                  <button onClick={() => setNumPlayers(Math.min(6, numPlayers + 1))} className="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-xl font-bold">+</button>
+                </div>
+              </div>
+
+              {/* Initial Life */}
+              <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
+                <span className="text-xs font-bold text-slate-400 uppercase">Vita Iniziale</span>
+                <div className="flex items-center gap-1">
+                  {[20, 40, 60].map(life => (
+                    <button
+                      key={life}
+                      onClick={() => setInitialLife(life)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${initialLife === life ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                    >
+                      {life}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex-1">
+              <button
+                onClick={startGenericGame}
+                className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-indigo-900/50 hover:to-slate-900 border border-indigo-500/20 hover:border-indigo-500/50 rounded-xl p-4 flex flex-row md:flex-col items-center justify-center gap-3 transition-all group min-h-[100px]"
+              >
+                <Zap size={32} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                <div className="text-left md:text-center">
+                  <span className="font-bold text-lg text-slate-200 block">Partita Veloce</span>
+                  <span className="text-xs text-slate-500 block">{numPlayers} Player Generici</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {Array.from({ length: numPlayers }).map((_, idx) => (
+              <div key={idx} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 flex gap-3 items-center">
+                <div className="w-8 h-8 rounded-lg bg-indigo-900/30 border border-indigo-500/20 flex items-center justify-center font-bold text-indigo-300 text-sm shrink-0">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="relative">
+                    <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <select
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 pl-9 pr-3 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors appearance-none"
+                      value={setupSlots[idx]?.playerId || ''}
+                      onChange={(e) => handleSlotChange(idx, 'playerId', e.target.value)}
+                    >
+                      <option value="">Seleziona Giocatore...</option>
+                      {storedPlayers.map(p => (
+                        <option key={p.id} value={p.id} disabled={Object.values(setupSlots).some(s => s.playerId === p.id && s !== setupSlots[idx])}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="relative">
+                    <Shield size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <select
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors appearance-none"
+                      value={setupSlots[idx]?.deckId || ''}
+                      onChange={(e) => handleSlotChange(idx, 'deckId', e.target.value)}
+                    >
+                      <option value="">Seleziona Mazzo...</option>
+                      {storedDecks.map(d => (
+                        <option key={d.id} value={d.id} disabled={Object.values(setupSlots).some(s => s.deckId === d.id && s !== setupSlots[idx])}>{d.commander}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-                {/* Initial Life */}
-                <div className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center gap-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase">Vita Iniziale</span>
-                  <div className="flex items-center gap-1">
-                    {[20, 40, 60].map(life => (
-                      <button
-                        key={life}
-                        onClick={() => setInitialLife(life)}
-                        className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${initialLife === life ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-                      >
-                        {life}
+        <div className="p-4 bg-slate-900 border-t border-slate-800 sticky bottom-0 z-30">
+          <Button
+            onClick={startGame}
+            disabled={!isSetupValid()}
+            className={`w-full py-4 text-lg rounded-xl shadow-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 ${isSetupValid()
+              ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-900/30 border border-green-500/30'
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+              }`}
+          >
+            <Swords size={20} className={isSetupValid() ? "animate-pulse" : ""} />
+            INIZIA PARTITA
+          </Button>
+        </div>
+
+        <Modal isOpen={libraryOpen} onClose={() => setLibraryOpen(false)} title="Libreria">
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Nuovi Giocatori</h4>
+              <div className="flex gap-2 mb-3">
+                <input type="text" placeholder="Nome..." className="bg-slate-900 border border-slate-700 rounded px-3 py-2 flex-1 text-sm outline-none" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} />
+                <Button variant="secondary" onClick={addPlayer} className="py-1 px-3"><Plus size={16} /></Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {storedPlayers.map(p => (
+                  <div key={p.id} className="bg-slate-800 px-2 py-1 rounded text-[10px] flex items-center gap-1 border border-slate-700">
+                    {p.name} <button onClick={() => requestDeletePlayer(p.id)} className="text-red-400 hover:text-red-300"><X size={10} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-slate-800"></div>
+            <div>
+              <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Nuovi Mazzi</h4>
+              <div className="space-y-2 mb-3">
+                <input type="text" placeholder="Comandante..." className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm outline-none" value={newDeckCommander} onChange={(e) => setNewDeckCommander(e.target.value)} />
+                <div className="flex gap-2">
+                  <select className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 outline-none text-sm" value={newDeckOwner} onChange={(e) => setNewDeckOwner(e.target.value)}>
+                    <option value="">Proprietario...</option>
+                    {storedPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                  <Button variant="secondary" onClick={addDeck} disabled={!newDeckOwner} className="py-1 px-3"><Plus size={16} /></Button>
+                </div>
+              </div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {storedDecks.map(d => (
+                  <div key={d.id} className="bg-slate-800 px-3 py-2 rounded text-[10px] flex items-center justify-between border border-slate-700">
+                    <span>{d.commander} <span className="text-slate-500">({storedPlayers.find(p => p.id === d.owner)?.name})</span></span>
+                    <button onClick={() => requestDeleteDeck(d.id)} className="text-red-400 hover:text-red-300"><Trash2 size={12} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Modal>
+
+        {itemToDelete && (
+          <Modal isOpen={true} onClose={() => setItemToDelete(null)} title="Conferma Eliminazione" zIndex="z-[60]">
+            <div className="flex flex-col gap-6 text-center pt-4 pb-2">
+              <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-amber-500 border border-amber-500/20">
+                <AlertTriangle size={32} />
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-lg font-bold text-white">Sei sicuro?</h4>
+                <p className="text-slate-400 text-sm">
+                  Stai per eliminare definitivamente questo {itemToDelete.type === 'player' ? 'giocatore' : 'mazzo'}.<br />
+                  L'azione è irreversibile.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <Button variant="secondary" onClick={() => setItemToDelete(null)} className="justify-center">Annulla</Button>
+                <Button variant="danger" onClick={confirmDelete} className="justify-center bg-red-600 hover:bg-red-500">Elimina Definitivamente</Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        <Modal
+          isOpen={historyListOpen}
+          onClose={() => { setHistoryListOpen(false); setStatsPlayerId(null); }}
+          title={statsPlayerId ? "Statistiche Giocatore" : "Storico Partite"}
+        >
+          {statsPlayerId ? (
+            (() => {
+              const stats = calculateStats(statsPlayerId);
+              return (
+                <div className="space-y-6 animate-in slide-in-from-right duration-200">
+                  <button onClick={() => setStatsPlayerId(null)} className="flex items-center gap-2 text-slate-400 hover:text-white mb-2">
+                    <ArrowLeft size={16} /> Torna indietro
+                  </button>
+                  <div className="bg-gradient-to-br from-indigo-900/40 to-slate-900 p-6 rounded-2xl border border-indigo-500/30 text-center">
+                    <h2 className="text-3xl font-bold text-indigo-200 mb-1">{stats.name}</h2>
+                    <div className="flex justify-center gap-8 mt-4 border-b border-slate-700 pb-4">
+                      <div className="flex flex-col"><span className="text-3xl font-black text-white">{stats.winRate}%</span><span className="text-xs text-slate-400 uppercase tracking-wider">Win Rate</span></div>
+                      <div className="flex flex-col border-l border-slate-700 pl-8"><span className="text-3xl font-black text-white">{stats.totalWins}/{stats.totalGames}</span><span className="text-xs text-slate-400 uppercase tracking-wider">Vittorie</span></div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-center gap-2 text-amber-400">
+                      <Hourglass size={16} />
+                      <span className="font-mono font-bold text-lg">{formatTurnTime(stats.globalAvgTurnTime)}</span>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider ml-1">Media Turno (3+)</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-400 mb-3 flex items-center gap-2"><Trophy size={16} className="text-amber-500" /> Top Commander</h4>
+                    <div className="space-y-2">
+                      {stats.topCommanders.length === 0 ? <p className="text-slate-500 text-xs italic">Nessun dato disponibile.</p> : stats.topCommanders.map((cmd, idx) => (
+                        <div key={idx} className="bg-slate-800 p-3 rounded-xl flex items-center justify-between border border-slate-700">
+                          <div className="flex items-center gap-3"><div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-amber-500 text-black' : 'bg-slate-700 text-slate-300'}`}>{idx + 1}</div><span className="font-bold text-slate-200 text-sm">{cmd.name} {cmd.ownerName && <span className="text-slate-500 text-[10px] ml-1">({cmd.ownerName})</span>}</span></div>
+                          <div className="text-right"><div className="text-sm font-bold text-indigo-300">{cmd.winRate}% WR</div><div className="text-[10px] text-slate-500">{cmd.won}W - {cmd.played}G</div></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            <div className="space-y-4 animate-in slide-in-from-left duration-200">
+              {matchHistory.length === 0 ? <p className="text-center text-slate-500 italic py-8">Nessuna partita salvata</p> : matchHistory.map((match) => (
+                <div key={match.id} className="bg-slate-800/50 border border-slate-700 p-3 rounded-xl flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-xs text-slate-400 border-b border-slate-700/50 pb-1 mb-1"><span>{new Date(match.date).toLocaleDateString()} - {new Date(match.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="flex items-center gap-1"><Clock size={10} /> {formatDuration(match.duration)} • {match.turns} Turni</span></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {match.players.map((p, i) => (
+                      <button key={i} onClick={() => p.originalId && setStatsPlayerId(p.originalId)} className={`text-xs p-2 rounded border flex flex-col text-left transition-colors hover:bg-white/5 ${p.originalId === match.winnerOriginalId ? 'bg-amber-500/20 border-amber-500/50 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-slate-900 border-transparent text-slate-400'}`}>
+                        <span className="font-bold truncate">{p.name}</span><span className="text-[10px] opacity-70 truncate">{p.deckName}</span>
                       </button>
                     ))}
                   </div>
                 </div>
-              </div>
-              <div className="flex-1">
-                <button
-                  onClick={startGenericGame}
-                  className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 hover:from-indigo-900/50 hover:to-slate-900 border border-indigo-500/20 hover:border-indigo-500/50 rounded-xl p-4 flex flex-row md:flex-col items-center justify-center gap-3 transition-all group min-h-[100px]"
-                >
-                  <Zap size={32} className="text-indigo-400 group-hover:scale-110 transition-transform" />
-                  <div className="text-left md:text-center">
-                    <span className="font-bold text-lg text-slate-200 block">Partita Veloce</span>
-                    <span className="text-xs text-slate-500 block">4 Player Generici</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {Array.from({ length: numPlayers }).map((_, idx) => (
-                <div key={idx} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 flex gap-3 items-center">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-900/30 border border-indigo-500/20 flex items-center justify-center font-bold text-indigo-300 text-sm shrink-0">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 flex flex-col gap-2">
-                    <div className="relative">
-                      <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <select
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 pl-9 pr-3 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors appearance-none"
-                        value={setupSlots[idx]?.playerId || ''}
-                        onChange={(e) => handleSlotChange(idx, 'playerId', e.target.value)}
-                      >
-                        <option value="">Seleziona Giocatore...</option>
-                        {storedPlayers.map(p => (
-                          <option key={p.id} value={p.id} disabled={Object.values(setupSlots).some(s => s.playerId === p.id && s !== setupSlots[idx])}>{p.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="relative">
-                      <Shield size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <select
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors appearance-none"
-                        value={setupSlots[idx]?.deckId || ''}
-                        onChange={(e) => handleSlotChange(idx, 'deckId', e.target.value)}
-                      >
-                        <option value="">Seleziona Mazzo...</option>
-                        {storedDecks.map(d => (
-                          <option key={d.id} value={d.id} disabled={Object.values(setupSlots).some(s => s.deckId === d.id && s !== setupSlots[idx])}>{d.commander}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
               ))}
             </div>
-          </div>
-
-          <div className="p-4 bg-slate-900 border-t border-slate-800 sticky bottom-0 z-30">
-            <Button
-              onClick={startGame}
-              disabled={!isSetupValid()}
-              className={`w-full py-4 text-lg rounded-xl shadow-xl transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 ${isSetupValid()
-                ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-900/30 border border-green-500/30'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                }`}
-            >
-              <Swords size={20} className={isSetupValid() ? "animate-pulse" : ""} />
-              INIZIA PARTITA
-            </Button>
-          </div>
-
-          <Modal isOpen={libraryOpen} onClose={() => setLibraryOpen(false)} title="Libreria">
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Nuovi Giocatori</h4>
-                <div className="flex gap-2 mb-3">
-                  <input type="text" placeholder="Nome..." className="bg-slate-900 border border-slate-700 rounded px-3 py-2 flex-1 text-sm outline-none" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} />
-                  <Button variant="secondary" onClick={addPlayer} className="py-1 px-3"><Plus size={16} /></Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {storedPlayers.map(p => (
-                    <div key={p.id} className="bg-slate-800 px-2 py-1 rounded text-[10px] flex items-center gap-1 border border-slate-700">
-                      {p.name} <button onClick={() => requestDeletePlayer(p.id)} className="text-red-400 hover:text-red-300"><X size={10} /></button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="border-t border-slate-800"></div>
-              <div>
-                <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Nuovi Mazzi</h4>
-                <div className="space-y-2 mb-3">
-                  <input type="text" placeholder="Comandante..." className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm outline-none" value={newDeckCommander} onChange={(e) => setNewDeckCommander(e.target.value)} />
-                  <div className="flex gap-2">
-                    <select className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 outline-none text-sm" value={newDeckOwner} onChange={(e) => setNewDeckOwner(e.target.value)}>
-                      <option value="">Proprietario...</option>
-                      {storedPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                    <Button variant="secondary" onClick={addDeck} disabled={!newDeckOwner} className="py-1 px-3"><Plus size={16} /></Button>
-                  </div>
-                </div>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {storedDecks.map(d => (
-                    <div key={d.id} className="bg-slate-800 px-3 py-2 rounded text-[10px] flex items-center justify-between border border-slate-700">
-                      <span>{d.commander} <span className="text-slate-500">({storedPlayers.find(p => p.id === d.owner)?.name})</span></span>
-                      <button onClick={() => requestDeleteDeck(d.id)} className="text-red-400 hover:text-red-300"><Trash2 size={12} /></button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Modal>
-
-          {itemToDelete && (
-            <Modal isOpen={true} onClose={() => setItemToDelete(null)} title="Conferma Eliminazione" zIndex="z-[60]">
-              <div className="flex flex-col gap-6 text-center pt-4 pb-2">
-                <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-amber-500 border border-amber-500/20">
-                  <AlertTriangle size={32} />
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-lg font-bold text-white">Sei sicuro?</h4>
-                  <p className="text-slate-400 text-sm">
-                    Stai per eliminare definitivamente questo {itemToDelete.type === 'player' ? 'giocatore' : 'mazzo'}.<br />
-                    L'azione è irreversibile.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  <Button variant="secondary" onClick={() => setItemToDelete(null)} className="justify-center">Annulla</Button>
-                  <Button variant="danger" onClick={confirmDelete} className="justify-center bg-red-600 hover:bg-red-500">Elimina Definitivamente</Button>
-                </div>
-              </div>
-            </Modal>
           )}
+        </Modal>
 
-          <Modal
-            isOpen={historyListOpen}
-            onClose={() => { setHistoryListOpen(false); setStatsPlayerId(null); }}
-            title={statsPlayerId ? "Statistiche Giocatore" : "Storico Partite"}
-          >
-            {statsPlayerId ? (
-              (() => {
-                const stats = calculateStats(statsPlayerId);
-                return (
-                  <div className="space-y-6 animate-in slide-in-from-right duration-200">
-                    <button onClick={() => setStatsPlayerId(null)} className="flex items-center gap-2 text-slate-400 hover:text-white mb-2">
-                      <ArrowLeft size={16} /> Torna indietro
-                    </button>
-                    <div className="bg-gradient-to-br from-indigo-900/40 to-slate-900 p-6 rounded-2xl border border-indigo-500/30 text-center">
-                      <h2 className="text-3xl font-bold text-indigo-200 mb-1">{stats.name}</h2>
-                      <div className="flex justify-center gap-8 mt-4 border-b border-slate-700 pb-4">
-                        <div className="flex flex-col"><span className="text-3xl font-black text-white">{stats.winRate}%</span><span className="text-xs text-slate-400 uppercase tracking-wider">Win Rate</span></div>
-                        <div className="flex flex-col border-l border-slate-700 pl-8"><span className="text-3xl font-black text-white">{stats.totalWins}/{stats.totalGames}</span><span className="text-xs text-slate-400 uppercase tracking-wider">Vittorie</span></div>
-                      </div>
-                      <div className="mt-4 flex items-center justify-center gap-2 text-amber-400">
-                        <Hourglass size={16} />
-                        <span className="font-mono font-bold text-lg">{formatTurnTime(stats.globalAvgTurnTime)}</span>
-                        <span className="text-xs text-slate-500 uppercase tracking-wider ml-1">Media Turno (3+)</span>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-400 mb-3 flex items-center gap-2"><Trophy size={16} className="text-amber-500" /> Top Commander</h4>
-                      <div className="space-y-2">
-                        {stats.topCommanders.length === 0 ? <p className="text-slate-500 text-xs italic">Nessun dato disponibile.</p> : stats.topCommanders.map((cmd, idx) => (
-                          <div key={idx} className="bg-slate-800 p-3 rounded-xl flex items-center justify-between border border-slate-700">
-                            <div className="flex items-center gap-3"><div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-amber-500 text-black' : 'bg-slate-700 text-slate-300'}`}>{idx + 1}</div><span className="font-bold text-slate-200 text-sm">{cmd.name} {cmd.ownerName && <span className="text-slate-500 text-[10px] ml-1">({cmd.ownerName})</span>}</span></div>
-                            <div className="text-right"><div className="text-sm font-bold text-indigo-300">{cmd.winRate}% WR</div><div className="text-[10px] text-slate-500">{cmd.won}W - {cmd.played}G</div></div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()
-            ) : (
-              <div className="space-y-4 animate-in slide-in-from-left duration-200">
-                {matchHistory.length === 0 ? <p className="text-center text-slate-500 italic py-8">Nessuna partita salvata</p> : matchHistory.map((match) => (
-                  <div key={match.id} className="bg-slate-800/50 border border-slate-700 p-3 rounded-xl flex flex-col gap-2">
-                    <div className="flex justify-between items-center text-xs text-slate-400 border-b border-slate-700/50 pb-1 mb-1"><span>{new Date(match.date).toLocaleDateString()} - {new Date(match.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className="flex items-center gap-1"><Clock size={10} /> {formatDuration(match.duration)} • {match.turns} Turni</span></div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {match.players.map((p, i) => (
-                        <button key={i} onClick={() => p.originalId && setStatsPlayerId(p.originalId)} className={`text-xs p-2 rounded border flex flex-col text-left transition-colors hover:bg-white/5 ${p.originalId === match.winnerOriginalId ? 'bg-amber-500/20 border-amber-500/50 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-slate-900 border-transparent text-slate-400'}`}>
-                          <span className="font-bold truncate">{p.name}</span><span className="text-[10px] opacity-70 truncate">{p.deckName}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Modal>
-
-        </div>
-        );
+      </div>
+    );
   }
 
-        // --- GAME VIEW ---
+  // --- GAME VIEW ---
 
-        return (
-        <div className="bg-slate-950 text-slate-100 fixed inset-0 font-sans select-none overflow-hidden h-[100dvh] w-[100dvw]" style={containerStyle}>
+  return (
+    <div className="bg-slate-950 text-slate-100 fixed inset-0 font-sans select-none overflow-hidden h-[100dvh] w-[100dvw]" style={containerStyle}>
 
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-950/20 via-slate-950 to-slate-950 -z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-950/20 via-slate-950 to-slate-950 -z-10" />
 
-          <div className={`grid h-full w-full p-2 gap-2 transition-all ${getGridClass(gameState.players.length)}`}>
+      <div className={`grid h-full w-full p-2 gap-2 transition-all ${getGridClass(gameState.players.length)}`}>
 
-            {/* Center Control */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center pointer-events-none">
-              {/* Global Mana Button */}
-              <div className="absolute left-[-80px] pointer-events-auto">
-                <button
-                  onClick={() => setManaOverlayOpen(true)}
-                  className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-600 flex items-center justify-center text-amber-400 shadow-lg hover:bg-slate-700 hover:scale-105 transition-all"
-                >
-                  <Sparkles size={20} />
-                </button>
-              </div>
-              <div
-                className="pointer-events-auto bg-white/20 backdrop-blur-sm border-2 border-white/20 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center w-24 h-24 md:w-32 md:h-32 group hover:scale-105 transition-transform cursor-pointer select-none touch-manipulation active:scale-95 hover:bg-white/30"
-                onPointerDown={handleTurnButtonDown}
-                onPointerUp={handleTurnButtonUp}
-                onPointerLeave={handleTurnButtonLeave}
-                onContextMenu={(e) => e.preventDefault()}
-              >
-                {(() => {
-                  // Calculate rotation for TURN BUTTON content based on active player
-                  let displayPlayers = [...gameState.players];
-                  if (displayPlayers.length === 4) {
-                    [displayPlayers[2], displayPlayers[3]] = [displayPlayers[3], displayPlayers[2]];
-                  }
-                  if (displayPlayers.length === 5) {
-                    [displayPlayers[3], displayPlayers[4]] = [displayPlayers[4], displayPlayers[3]];
-                  }
-                  const activePlayerGridIndex = displayPlayers.findIndex(p => p.gameId === gameState.players[gameState.activePlayerIndex]?.gameId);
-                  const rotationClass = getRotationClass(activePlayerGridIndex, gameState.players.length);
-
-                  return (
-                    <div className={`flex flex-col items-center justify-center ${rotationClass} transition-transform duration-500`}>
-                      <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Turno</span>
-                      <span className="text-4xl font-black text-white">{gameState.turnCount}</span>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Winner Modal Overlay */}
-            {winner && (
-              <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-8 pointer-events-auto animate-in fade-in duration-500">
-                <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/50 rounded-3xl p-8 w-full max-w-md text-center shadow-[0_0_60px_rgba(245,158,11,0.2)] flex flex-col items-center gap-6">
-                  <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center mb-2 animate-bounce">
-                    <Trophy size={48} className="text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-black text-white mb-2">Vittoria!</h2>
-                    <p className="text-amber-200 text-xl font-bold">{winner.name}</p>
-                    <p className="text-slate-500 text-sm mt-1">{winner.deckName}</p>
-                  </div>
-                  <div className="grid grid-cols-1 w-full gap-3 mt-4">
-                    <Button onClick={saveMatch} variant="success" className="py-4 text-lg bg-amber-600 hover:bg-amber-500 border border-amber-400/30"><Save size={20} /> Salva in Storico</Button>
-                    <Button onClick={exitMatch} variant="ghost" className="py-4 text-slate-400 hover:text-white"><LogOut size={20} /> Esci senza salvare</Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Player Grid */}
+        {/* Center Control */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center pointer-events-none">
+          {/* Global Mana Button */}
+          <div className="absolute left-[-80px] pointer-events-auto">
+            <button
+              onClick={() => setManaOverlayOpen(true)}
+              className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-600 flex items-center justify-center text-amber-400 shadow-lg hover:bg-slate-700 hover:scale-105 transition-all"
+            >
+              <Sparkles size={20} />
+            </button>
+          </div>
+          <div
+            className="pointer-events-auto bg-white/20 backdrop-blur-sm border-2 border-white/20 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center w-24 h-24 md:w-32 md:h-32 group hover:scale-105 transition-transform cursor-pointer select-none touch-manipulation active:scale-95 hover:bg-white/30"
+            onPointerDown={handleTurnButtonDown}
+            onPointerUp={handleTurnButtonUp}
+            onPointerLeave={handleTurnButtonLeave}
+            onContextMenu={(e) => e.preventDefault()}
+          >
             {(() => {
+              // Calculate rotation for TURN BUTTON content based on active player
               let displayPlayers = [...gameState.players];
               if (displayPlayers.length === 4) {
                 [displayPlayers[2], displayPlayers[3]] = [displayPlayers[3], displayPlayers[2]];
@@ -1133,352 +1091,394 @@ export default function App() {
               if (displayPlayers.length === 5) {
                 [displayPlayers[3], displayPlayers[4]] = [displayPlayers[4], displayPlayers[3]];
               }
+              const activePlayerGridIndex = displayPlayers.findIndex(p => p.gameId === gameState.players[gameState.activePlayerIndex]?.gameId);
+              const rotationClass = getRotationClass(activePlayerGridIndex, gameState.players.length);
 
-              return displayPlayers.map((player, idx) => {
-                // FIX: Check if this player is the one currently in the active player's seat
-                const activePlayer = gameState.players[gameState.activePlayerIndex];
-                const isActive = activePlayer && player.gameId === activePlayer.gameId;
-
-                const isDead = player.isDead;
-                const overlay = playerOverlays[player.gameId];
-                const feedback = tapFeedback[player.gameId];
-                const cmdFeedback = cmdTapFeedback; // Access global state directly
-                const menuOpen = playerMenus[player.gameId];
-                const activeMode = player.activeCounter;
-                const isSwapSource = swapSourceId === player.gameId;
-                const isSwapMode = swapSourceId !== null;
-
-                let counterColor, bgClass, iconColor, currentValue, currentIcon;
-                let fieldName;
-
-                if (activeMode === 'poison') {
-                  bgClass = 'bg-green-950/40 border-green-500/30';
-                  iconColor = 'text-green-500';
-                  counterColor = 'text-green-200';
-                  currentValue = player.poison;
-                  currentIcon = <Droplet size={24} className="md:w-6 md:h-6" />;
-                  fieldName = 'poison';
-                } else if (activeMode === 'tax') {
-                  bgClass = 'bg-cyan-950/40 border-cyan-500/30';
-                  iconColor = 'text-cyan-400';
-                  counterColor = 'text-cyan-200';
-                  currentValue = player.commanderTax;
-                  currentIcon = <Gem size={24} className="md:w-6 md:h-6" />;
-                  fieldName = 'commanderTax';
-                } else if (activeMode === 'energy') {
-                  bgClass = 'bg-yellow-950/40 border-yellow-500/30';
-                  iconColor = 'text-yellow-400';
-                  counterColor = 'text-yellow-200';
-                  currentValue = player.energy;
-                  currentIcon = <Zap size={24} className="md:w-6 md:h-6" />;
-                  fieldName = 'energy';
-                } else { // rad
-                  bgClass = 'bg-orange-950/40 border-orange-500/30';
-                  iconColor = 'text-orange-500';
-                  counterColor = 'text-orange-200';
-                  currentValue = player.rad;
-                  currentIcon = <Radiation size={24} className="md:w-6 md:h-6" />;
-                  fieldName = 'rad';
-                }
-
-                const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
-                const rotationClass = getRotationClass(idx, gameState.players.length);
-                const isSideways = rotationClass.includes('rotate-90') || rotationClass.includes('-rotate-90');
-
-                const cardZIndex = overlay ? 'z-[60]' : (isDead ? 'z-0' : (isActive ? 'z-10' : 'z-0'));
-
-                return (
-                  <div
-                    key={player.gameId}
-                    className={`relative rounded-2xl overflow-hidden border-2 ${getCellSpanClass(idx, gameState.players.length)} ${isDead ? 'border-red-900/50 grayscale opacity-60' :
-                      isActive ? 'border-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.3)]' :
-                        'border-slate-800'
-                      } ${cardZIndex} ${isSwapSource ? 'ring-4 ring-indigo-500 ring-offset-2 ring-offset-slate-900 animate-pulse' : ''}`}
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${player.color} opacity-40 z-0`} />
-
-                    {/* ROTATING CONTENT WRAPPER */}
-                    <div className={`absolute inset-0 flex flex-col ${rotationClass} transition-transform duration-300`}>
-
-                      {/* Interactive Tap Zones */}
-                      {!isDead && !overlay && !winner && !isSwapMode && (
-                        <div className="absolute top-14 bottom-16 left-0 right-0 z-10 flex">
-                          <div
-                            className={`w-1/2 h-full border-r border-white/5 bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'left' ? 'bg-white/10' : ''}`}
-                            onPointerDown={(e) => handlePointerDown(e, player.gameId, 'left')}
-                            onPointerUp={(e) => handlePointerUp(e, player.gameId, 'left')}
-                            onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
-                            onContextMenu={(e) => e.preventDefault()}
-                          ></div>
-                          <div
-                            className={`w-1/2 h-full bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'right' ? 'bg-white/10' : ''}`}
-                            onPointerDown={(e) => handlePointerDown(e, player.gameId, 'right')}
-                            onPointerUp={(e) => handlePointerUp(e, player.gameId, 'right')}
-                            onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
-                            onContextMenu={(e) => e.preventDefault()}
-                          ></div>
-                        </div>
-                      )}
-
-                      {/* Layer 3: Content */}
-                      <div className="relative z-20 h-full flex flex-col pointer-events-none">
-
-                        {/* Name Bar - Clickable for Swap */}
-                        <div
-                          className={`relative px-3 py-2 flex items-center justify-center bg-black/20 pointer-events-auto min-h-[3.5rem] shrink-0 cursor-pointer transition-colors ${isSwapMode && !isSwapSource ? 'hover:bg-indigo-500/30 border-2 border-dashed border-indigo-400/50' : ''}`}
-                          onClick={() => handleSwapSelection(player.gameId)}
-                        >
-                          {isSwapMode && (
-                            <div className="absolute left-2 text-indigo-300 animate-pulse">
-                              <ArrowRightLeft size={16} />
-                            </div>
-                          )}
-                          <div className={`flex flex-col items-center justify-center ${isSideways ? 'w-64' : 'w-full'}`}>
-                            <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
-                            <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
-                              <Shield size={10} /> {player.deckName}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex-1 flex items-center justify-center w-full min-h-0">
-                          {isDead ? (
-                            <div className="flex flex-col items-center justify-center gap-2 pointer-events-auto">
-                              <div className="flex flex-col items-center text-red-400">
-                                <Skull size={24} className="mb-1" />
-                                <span className="text-lg font-bold">ELIMINATO</span>
-                                <span className="text-[10px] text-red-200/70">{player.deathReason}</span>
-                              </div>
-                              <button onClick={() => resurrectPlayer(player.gameId)} className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-[10px] font-bold border border-slate-600">
-                                <Undo2 size={12} /> Undo
-                              </button>
-                            </div>
-                          ) : (
-                            <div className={`text-[20vmin] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none leading-none ${isSwapMode ? 'opacity-30' : ''}`}>
-                              {player.life}
-                            </div>
-                          )}
-                        </div>
-
-                        {!isDead && !winner && !menuOpen && !isSwapMode && (
-                          <div className={
-                            isSideways
-                              ? `absolute ${isRotated90 ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 pointer-events-auto z-20`
-                              : "flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem] shrink-0 relative"
-                          }>
-                            <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90 z-20 shadow-lg border border-white/5">
-                              <Plus size={28} className="text-white/80" />
-                            </button>
-                          </div>
-                        )}
-
-
-                        {/* EXPANDABLE MENU */}
-                        {menuOpen && !isDead && !winner && (
-                          <>
-                            {/* Backdrop for Menu */}
-                            <div className="absolute inset-0 z-20" onClick={() => togglePlayerMenu(player.gameId)} />
-
-                            <div className={`absolute z-30 bg-slate-950/80 backdrop-blur-md rounded-2xl p-2 border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-wrap justify-center gap-2 pointer-events-auto
-                              ${isSideways
-                                ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[200px]'
-                                : 'bottom-2 left-2 right-2 slide-in-from-bottom-2'
-                              }
-                            `}>
-
-                              <div className="w-full flex justify-end mb-1">
-                                <button onClick={() => togglePlayerMenu(player.gameId)} className="p-1 text-slate-400 hover:text-white bg-white/10 rounded-full">
-                                  <X size={16} />
-                                </button>
-                              </div>
-
-                              <div className="flex gap-3 items-center justify-center w-full flex-wrap">
-
-
-                                <div className={`flex items-center gap-1 px-1 rounded-full border transition-colors duration-300 h-12 shrink-0 ${bgClass}`}>
-                                  <button onClick={() => togglePlayerCounter(player.gameId)} className={`p-1 rounded-full ${iconColor}`}>
-                                    {currentIcon}
-                                  </button>
-                                  <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: Math.max(0, p[fieldName] - 1) }))} className="w-8 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-xl">-</button>
-                                  <span className={`font-bold w-8 text-center text-xl ${counterColor}`}>{currentValue}</span>
-                                  <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: p[fieldName] + 1 }))} className="w-8 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-xl">+</button>
-                                </div>
-
-                                <button onClick={() => setOverlay(player.gameId, 'CMD')} className={`flex items-center justify-center w-12 h-12 rounded-full border transition-all shrink-0 ${maxCmdDmg > 0 ? maxCmdDmg >= 15 ? 'bg-red-600 border-red-500 text-white' : 'bg-red-900/50 border-red-500/30 text-red-300' : 'bg-slate-900/50 border-slate-700/30 text-slate-400'}`}>
-                                  <Swords size={24} />
-                                </button>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      {/* OVERLAYS - INSIDE ROTATION WRAPPER so they rotate too */}
-                      {overlay === 'MANA' && (
-                        <div
-                          className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 pointer-events-auto"
-                          onClick={(e) => { if (e.target === e.currentTarget) setOverlay(player.gameId, null); }}
-                        >
-                          <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-full z-50 transition-colors"><X size={20} /></button>
-                          <h4 className="text-center font-bold text-amber-400 mb-1 text-xs flex items-center justify-center gap-1 pointer-events-none"><Sparkles size={12} /> Mana</h4>
-                          <div className="grid grid-cols-3 gap-2 flex-1 content-center pointer-events-none">
-                            {MANA_TYPES.map(type => (
-                              <div key={type.key} className={`flex flex-col items-center justify-center p-1 rounded border pointer-events-auto ${type.color}`}>
-                                <type.icon size={16} className="mb-1 opacity-80" />
-                                <div className="flex items-center gap-1">
-                                  <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))} className="w-12 h-12 rounded bg-black/30 font-bold text-xs flex items-center justify-center transition-colors hover:bg-black/50 active:scale-95">-</button>
-                                  <span className="font-bold w-4 text-center text-xs">{player.mana[type.key]}</span>
-                                  <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))} className="w-12 h-12 rounded bg-black/30 font-bold text-xs flex items-center justify-center transition-colors hover:bg-black/50 active:scale-95">+</button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {overlay === 'CMD' && (
-                        <div
-                          className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 overflow-y-auto pointer-events-auto"
-                          onClick={(e) => { if (e.target === e.currentTarget) setOverlay(player.gameId, null); }}
-                        >
-                          <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-full z-50 transition-colors"><X size={20} /></button>
-                          <h4 className="text-center font-bold text-red-400 mb-2 text-xs flex items-center justify-center gap-1 pointer-events-none"><Swords size={12} /> Danni Cmd</h4>
-                          <div className="grid grid-cols-2 grid-rows-2 h-full gap-2 pb-4 pointer-events-none">
-                            {gameState.players.filter(p => p.gameId !== player.gameId).map(opponent => {
-                              const currentDmg = player.commanderDamage[opponent.gameId] || 0;
-                              const feedbackKey = `${player.gameId}_${opponent.gameId}`;
-                              const activeFeedback = cmdFeedback[feedbackKey];
-
-                              return (
-                                <div
-                                  key={opponent.gameId}
-                                  className="relative flex flex-col items-center justify-center bg-black/40 rounded-lg border border-white/10 overflow-hidden select-none touch-manipulation pointer-events-auto"
-                                  onPointerDown={(e) => handleCmdPointerDown(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
-                                  onPointerUp={(e) => handleCmdPointerUp(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
-                                  onPointerLeave={(e) => handleCmdPointerLeave(e, player.gameId, opponent.gameId)}
-                                  onContextMenu={(e) => e.preventDefault()}
-                                >
-                                  {/* Visual Feedback */}
-                                  <div className="absolute inset-0 flex pointer-events-none">
-                                    {/* Left Zone (Green/Minus) */}
-                                    <div className={`flex-1 h-full bg-green-500/10 flex items-center justify-center relative transition-colors ${activeFeedback === 'left' ? 'bg-green-500/30' : ''}`}>
-                                      <Minus size={48} className="text-green-200/20 absolute" />
-                                    </div>
-                                    {/* Right Zone (Red/Plus) */}
-                                    <div className={`flex-1 h-full bg-red-500/10 flex items-center justify-center relative transition-colors ${activeFeedback === 'right' ? 'bg-red-500/30' : ''}`}>
-                                      <Plus size={48} className="text-red-200/20 absolute" />
-                                    </div>
-                                  </div>
-
-                                  <span className="text-[10px] text-slate-300 font-bold truncate w-full text-center px-1 absolute top-1 z-10 shadow-black drop-shadow-md">{opponent.deckName}</span>
-                                  <span className={`text-4xl font-black z-10 drop-shadow-lg ${currentDmg >= 21 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{currentDmg}</span>
-
-                                  {/* Small Helper Icons at bottom */}
-                                  <div className="absolute bottom-1 w-full flex justify-between px-4 text-[10px] text-slate-400 font-bold pointer-events-none z-10 opacity-70">
-                                    <span>-</span>
-                                    <span>+</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                );
-              });
+              return (
+                <div className={`flex flex-col items-center justify-center ${rotationClass} transition-transform duration-500`}>
+                  <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Turno</span>
+                  <span className="text-4xl font-black text-white">{gameState.turnCount}</span>
+                </div>
+              );
             })()}
           </div>
-
-          {/* Menu Modal */}
-          <Modal
-            isOpen={gameMenuOpen}
-            onClose={() => { setGameMenuOpen(false); setExitConfirmOpen(false); }}
-            title={exitConfirmOpen ? "Conferma Uscita" : "Menu"}
-          >
-            {exitConfirmOpen ? (
-              <div className="flex flex-col gap-4 text-center">
-                <p className="text-slate-300">La partita corrente verrà persa. Sei sicuro?</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="secondary" onClick={() => setExitConfirmOpen(false)}>Annulla</Button>
-                  <Button variant="danger" onClick={() => { setView('SETUP'); setGameMenuOpen(false); setExitConfirmOpen(false); setWinner(null); }}>Conferma Uscita</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <Button variant="secondary" onClick={() => { setGameLogOpen(true); setGameMenuOpen(false); }} className="w-full justify-center py-4 text-lg">
-                  <History size={20} /> Log Partita Corrente
-                </Button>
-                <Button variant="danger" onClick={() => setExitConfirmOpen(true)} className="w-full justify-center py-4 text-lg">
-                  <Home size={20} /> Torna alla Home
-                </Button>
-              </div>
-            )}
-          </Modal>
-
-          {/* Mana Overlay */}
-          {manaOverlayOpen && (
-            <div
-              className="absolute inset-0 z-[70] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-200 pointer-events-auto"
-              onClick={(e) => { if (e.target === e.currentTarget) setManaOverlayOpen(false); }}
-            >
-              <button onClick={() => setManaOverlayOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white"><X size={24} /></button>
-              <h2 className="text-2xl font-bold text-amber-400 mb-6 flex items-center gap-2"><Sparkles /> Gestione Mana - {gameState.players[gameState.activePlayerIndex]?.name}</h2>
-
-              <div className="grid grid-cols-3 gap-4 w-full max-w-md">
-                {MANA_TYPES.map(type => {
-                  const activePlayer = gameState.players[gameState.activePlayerIndex];
-                  if (!activePlayer) return null;
-                  return (
-                    <div key={type.key} className={`flex flex-col items-center justify-center p-4 rounded-xl border ${type.color} bg-opacity-20`}>
-                      <type.icon size={32} className="mb-2 opacity-80" />
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => updatePlayer(activePlayer.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))}
-                          className="w-12 h-12 rounded-lg bg-black/40 font-bold text-xl flex items-center justify-center hover:bg-black/60 active:scale-95"
-                        >-</button>
-                        <span className="font-bold text-2xl w-8 text-center">{activePlayer.mana[type.key]}</span>
-                        <button
-                          onClick={() => updatePlayer(activePlayer.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))}
-                          className="w-12 h-12 rounded-lg bg-black/40 font-bold text-xl flex items-center justify-center hover:bg-black/60 active:scale-95"
-                        >+</button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* In-Game Log Modal (UNCHANGED) */}
-          <Modal isOpen={gameLogOpen} onClose={() => setGameLogOpen(false)} title="Log Partita Corrente">
-            <div className="space-y-4">
-              {gameState.history.length === 0 ? (
-                <p className="text-center text-slate-500 italic py-8">Nessun evento registrato</p>
-              ) : (
-                [...gameState.history].reverse().map((log, idx) => {
-                  const player = gameState.players.find(p => p.gameId === log.playerId);
-                  if (!player) return null;
-                  return (
-                    <div key={idx} className="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-slate-700">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600 flex items-center justify-center text-xs font-bold">
-                          T{log.turn}
-                        </div>
-                        <span className="font-bold text-slate-200">{player.name}</span>
-                      </div>
-                      <div className={`font-mono font-bold text-lg ${log.diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {log.diff > 0 ? `+${log.diff}` : log.diff}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </Modal>
-
         </div>
-        );
+
+        {/* Winner Modal Overlay */}
+        {winner && (
+          <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-8 pointer-events-auto animate-in fade-in duration-500">
+            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/50 rounded-3xl p-8 w-full max-w-md text-center shadow-[0_0_60px_rgba(245,158,11,0.2)] flex flex-col items-center gap-6">
+              <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center mb-2 animate-bounce">
+                <Trophy size={48} className="text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black text-white mb-2">Vittoria!</h2>
+                <p className="text-amber-200 text-xl font-bold">{winner.name}</p>
+                <p className="text-slate-500 text-sm mt-1">{winner.deckName}</p>
+              </div>
+              <div className="grid grid-cols-1 w-full gap-3 mt-4">
+                <Button onClick={saveMatch} variant="success" className="py-4 text-lg bg-amber-600 hover:bg-amber-500 border border-amber-400/30"><Save size={20} /> Salva in Storico</Button>
+                <Button onClick={exitMatch} variant="ghost" className="py-4 text-slate-400 hover:text-white"><LogOut size={20} /> Esci senza salvare</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Player Grid */}
+        {(() => {
+          let displayPlayers = [...gameState.players];
+          if (displayPlayers.length === 4) {
+            [displayPlayers[2], displayPlayers[3]] = [displayPlayers[3], displayPlayers[2]];
+          }
+          if (displayPlayers.length === 5) {
+            [displayPlayers[3], displayPlayers[4]] = [displayPlayers[4], displayPlayers[3]];
+          }
+
+          return displayPlayers.map((player, idx) => {
+            // FIX: Check if this player is the one currently in the active player's seat
+            const activePlayer = gameState.players[gameState.activePlayerIndex];
+            const isActive = activePlayer && player.gameId === activePlayer.gameId;
+
+            const isDead = player.isDead;
+            const overlay = playerOverlays[player.gameId];
+            const feedback = tapFeedback[player.gameId];
+            const cmdFeedback = cmdTapFeedback; // Access global state directly
+            const menuOpen = playerMenus[player.gameId];
+            const activeMode = player.activeCounter;
+            const isSwapSource = swapSourceId === player.gameId;
+            const isSwapMode = swapSourceId !== null;
+
+            let counterColor, bgClass, iconColor, currentValue, currentIcon;
+            let fieldName;
+
+            if (activeMode === 'poison') {
+              bgClass = 'bg-green-950/40 border-green-500/30';
+              iconColor = 'text-green-500';
+              counterColor = 'text-green-200';
+              currentValue = player.poison;
+              currentIcon = <Droplet size={24} className="md:w-6 md:h-6" />;
+              fieldName = 'poison';
+            } else if (activeMode === 'tax') {
+              bgClass = 'bg-cyan-950/40 border-cyan-500/30';
+              iconColor = 'text-cyan-400';
+              counterColor = 'text-cyan-200';
+              currentValue = player.commanderTax;
+              currentIcon = <Gem size={24} className="md:w-6 md:h-6" />;
+              fieldName = 'commanderTax';
+            } else if (activeMode === 'energy') {
+              bgClass = 'bg-yellow-950/40 border-yellow-500/30';
+              iconColor = 'text-yellow-400';
+              counterColor = 'text-yellow-200';
+              currentValue = player.energy;
+              currentIcon = <Zap size={24} className="md:w-6 md:h-6" />;
+              fieldName = 'energy';
+            } else { // rad
+              bgClass = 'bg-orange-950/40 border-orange-500/30';
+              iconColor = 'text-orange-500';
+              counterColor = 'text-orange-200';
+              currentValue = player.rad;
+              currentIcon = <Radiation size={24} className="md:w-6 md:h-6" />;
+              fieldName = 'rad';
+            }
+
+            const maxCmdDmg = Math.max(0, ...Object.values(player.commanderDamage));
+            const rotationClass = getRotationClass(idx, gameState.players.length);
+            const isSideways = rotationClass.includes('rotate-90') || rotationClass.includes('-rotate-90');
+
+            const cardZIndex = overlay ? 'z-[60]' : (isDead ? 'z-0' : (isActive ? 'z-10' : 'z-0'));
+
+            return (
+              <div
+                key={player.gameId}
+                className={`relative rounded-2xl overflow-hidden border-2 ${getCellSpanClass(idx, gameState.players.length)} ${isDead ? 'border-red-900/50 grayscale opacity-60' :
+                  isActive ? 'border-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.3)]' :
+                    'border-slate-800'
+                  } ${cardZIndex} ${isSwapSource ? 'ring-4 ring-indigo-500 ring-offset-2 ring-offset-slate-900 animate-pulse' : ''}`}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${player.color} opacity-40 z-0`} />
+
+                {/* ROTATING CONTENT WRAPPER */}
+                <div className={`absolute inset-0 flex flex-col ${rotationClass} transition-transform duration-300`}>
+
+                  {/* Interactive Tap Zones */}
+                  {!isDead && !overlay && !winner && !isSwapMode && (
+                    <div className="absolute top-14 bottom-16 left-0 right-0 z-10 flex">
+                      <div
+                        className={`w-1/2 h-full border-r border-white/5 bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'left' ? 'bg-white/10' : ''}`}
+                        onPointerDown={(e) => handlePointerDown(e, player.gameId, 'left')}
+                        onPointerUp={(e) => handlePointerUp(e, player.gameId, 'left')}
+                        onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
+                        onContextMenu={(e) => e.preventDefault()}
+                      ></div>
+                      <div
+                        className={`w-1/2 h-full bg-white/[0.02] cursor-pointer touch-manipulation transition-colors active:bg-white/10 ${feedback === 'right' ? 'bg-white/10' : ''}`}
+                        onPointerDown={(e) => handlePointerDown(e, player.gameId, 'right')}
+                        onPointerUp={(e) => handlePointerUp(e, player.gameId, 'right')}
+                        onPointerLeave={(e) => handlePointerLeave(e, player.gameId)}
+                        onContextMenu={(e) => e.preventDefault()}
+                      ></div>
+                    </div>
+                  )}
+
+                  {/* Layer 3: Content */}
+                  <div className="relative z-20 h-full flex flex-col pointer-events-none">
+
+                    {/* Name Bar - Clickable for Swap */}
+                    <div
+                      className={`relative px-3 py-2 flex items-center justify-center bg-black/20 pointer-events-auto min-h-[3.5rem] shrink-0 cursor-pointer transition-colors ${isSwapMode && !isSwapSource ? 'hover:bg-indigo-500/30 border-2 border-dashed border-indigo-400/50' : ''}`}
+                      onClick={() => handleSwapSelection(player.gameId)}
+                    >
+                      {isSwapMode && (
+                        <div className="absolute left-2 text-indigo-300 animate-pulse">
+                          <ArrowRightLeft size={16} />
+                        </div>
+                      )}
+                      <div className={`flex flex-col items-center justify-center ${isSideways ? 'w-64' : 'w-full'}`}>
+                        <h3 className="font-bold text-sm md:text-lg shadow-black drop-shadow-md truncate">{player.name}</h3>
+                        <div className="text-[10px] text-white/70 flex items-center gap-1 truncate">
+                          <Shield size={10} /> {player.deckName}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 flex items-center justify-center w-full min-h-0">
+                      {isDead ? (
+                        <div className="flex flex-col items-center justify-center gap-2 pointer-events-auto">
+                          <div className="flex flex-col items-center text-red-400">
+                            <Skull size={24} className="mb-1" />
+                            <span className="text-lg font-bold">ELIMINATO</span>
+                            <span className="text-[10px] text-red-200/70">{player.deathReason}</span>
+                          </div>
+                          <button onClick={() => resurrectPlayer(player.gameId)} className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-[10px] font-bold border border-slate-600">
+                            <Undo2 size={12} /> Undo
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={`text-[20vmin] font-black tracking-tighter drop-shadow-2xl select-none tabular-nums pointer-events-none leading-none ${isSwapMode ? 'opacity-30' : ''}`}>
+                          {player.life}
+                        </div>
+                      )}
+                    </div>
+
+                    {!isDead && !winner && !menuOpen && !isSwapMode && (
+                      <div className={
+                        isSideways
+                          ? `absolute ${isRotated90 ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 pointer-events-auto z-20`
+                          : "flex items-center justify-center pointer-events-auto pb-2 min-h-[4rem] shrink-0 relative"
+                      }>
+                        <button onClick={() => togglePlayerMenu(player.gameId)} className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur flex items-center justify-center transition-transform active:scale-90 z-20 shadow-lg border border-white/5">
+                          <Plus size={28} className="text-white/80" />
+                        </button>
+                      </div>
+                    )}
+
+
+                    {/* EXPANDABLE MENU */}
+                    {menuOpen && !isDead && !winner && (
+                      <>
+                        {/* Backdrop for Menu */}
+                        <div className="absolute inset-0 z-20" onClick={() => togglePlayerMenu(player.gameId)} />
+
+                        <div className={`absolute z-30 bg-slate-950/80 backdrop-blur-md rounded-2xl p-2 border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-wrap justify-center gap-2 pointer-events-auto
+                              ${isSideways
+                            ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[200px]'
+                            : 'bottom-2 left-2 right-2 slide-in-from-bottom-2'
+                          }
+                            `}>
+
+                          <div className="w-full flex justify-end mb-1">
+                            <button onClick={() => togglePlayerMenu(player.gameId)} className="p-1 text-slate-400 hover:text-white bg-white/10 rounded-full">
+                              <X size={16} />
+                            </button>
+                          </div>
+
+                          <div className="flex gap-3 items-center justify-center w-full flex-wrap">
+
+
+                            <div className={`flex items-center gap-1 px-1 rounded-full border transition-colors duration-300 h-12 shrink-0 ${bgClass}`}>
+                              <button onClick={() => togglePlayerCounter(player.gameId)} className={`p-1 rounded-full ${iconColor}`}>
+                                {currentIcon}
+                              </button>
+                              <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: Math.max(0, p[fieldName] - 1) }))} className="w-8 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-xl">-</button>
+                              <span className={`font-bold w-8 text-center text-xl ${counterColor}`}>{currentValue}</span>
+                              <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, [fieldName]: p[fieldName] + 1 }))} className="w-8 h-full flex items-center justify-center font-bold text-slate-300 hover:text-white text-xl">+</button>
+                            </div>
+
+                            <button onClick={() => setOverlay(player.gameId, 'CMD')} className={`flex items-center justify-center w-12 h-12 rounded-full border transition-all shrink-0 ${maxCmdDmg > 0 ? maxCmdDmg >= 15 ? 'bg-red-600 border-red-500 text-white' : 'bg-red-900/50 border-red-500/30 text-red-300' : 'bg-slate-900/50 border-slate-700/30 text-slate-400'}`}>
+                              <Swords size={24} />
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* OVERLAYS - INSIDE ROTATION WRAPPER so they rotate too */}
+                  {overlay === 'MANA' && (
+                    <div
+                      className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 pointer-events-auto"
+                      onClick={(e) => { if (e.target === e.currentTarget) setOverlay(player.gameId, null); }}
+                    >
+                      <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-full z-50 transition-colors"><X size={20} /></button>
+                      <h4 className="text-center font-bold text-amber-400 mb-1 text-xs flex items-center justify-center gap-1 pointer-events-none"><Sparkles size={12} /> Mana</h4>
+                      <div className="grid grid-cols-3 gap-2 flex-1 content-center pointer-events-none">
+                        {MANA_TYPES.map(type => (
+                          <div key={type.key} className={`flex flex-col items-center justify-center p-1 rounded border pointer-events-auto ${type.color}`}>
+                            <type.icon size={16} className="mb-1 opacity-80" />
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))} className="w-12 h-12 rounded bg-black/30 font-bold text-xs flex items-center justify-center transition-colors hover:bg-black/50 active:scale-95">-</button>
+                              <span className="font-bold w-4 text-center text-xs">{player.mana[type.key]}</span>
+                              <button onClick={() => updatePlayer(player.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))} className="w-12 h-12 rounded bg-black/30 font-bold text-xs flex items-center justify-center transition-colors hover:bg-black/50 active:scale-95">+</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {overlay === 'CMD' && (
+                    <div
+                      className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex flex-col p-3 animate-in zoom-in-95 duration-200 overflow-y-auto pointer-events-auto"
+                      onClick={(e) => { if (e.target === e.currentTarget) setOverlay(player.gameId, null); }}
+                    >
+                      <button onClick={() => setOverlay(player.gameId, null)} className="absolute top-2 right-2 p-1 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-full z-50 transition-colors"><X size={20} /></button>
+                      <h4 className="text-center font-bold text-red-400 mb-2 text-xs flex items-center justify-center gap-1 pointer-events-none"><Swords size={12} /> Danni Cmd</h4>
+                      <div className="grid grid-cols-2 grid-rows-2 h-full gap-2 pb-4 pointer-events-none">
+                        {gameState.players.filter(p => p.gameId !== player.gameId).map(opponent => {
+                          const currentDmg = player.commanderDamage[opponent.gameId] || 0;
+                          const feedbackKey = `${player.gameId}_${opponent.gameId}`;
+                          const activeFeedback = cmdFeedback[feedbackKey];
+
+                          return (
+                            <div
+                              key={opponent.gameId}
+                              className="relative flex flex-col items-center justify-center bg-black/40 rounded-lg border border-white/10 overflow-hidden select-none touch-manipulation pointer-events-auto"
+                              onPointerDown={(e) => handleCmdPointerDown(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
+                              onPointerUp={(e) => handleCmdPointerUp(e, player.gameId, opponent.gameId, e.currentTarget.getBoundingClientRect().width / 2 < (e.clientX - e.currentTarget.getBoundingClientRect().left) ? 'right' : 'left')}
+                              onPointerLeave={(e) => handleCmdPointerLeave(e, player.gameId, opponent.gameId)}
+                              onContextMenu={(e) => e.preventDefault()}
+                            >
+                              {/* Visual Feedback */}
+                              <div className="absolute inset-0 flex pointer-events-none">
+                                {/* Left Zone (Green/Minus) */}
+                                <div className={`flex-1 h-full bg-green-500/10 flex items-center justify-center relative transition-colors ${activeFeedback === 'left' ? 'bg-green-500/30' : ''}`}>
+                                  <Minus size={48} className="text-green-200/20 absolute" />
+                                </div>
+                                {/* Right Zone (Red/Plus) */}
+                                <div className={`flex-1 h-full bg-red-500/10 flex items-center justify-center relative transition-colors ${activeFeedback === 'right' ? 'bg-red-500/30' : ''}`}>
+                                  <Plus size={48} className="text-red-200/20 absolute" />
+                                </div>
+                              </div>
+
+                              <span className="text-[10px] text-slate-300 font-bold truncate w-full text-center px-1 absolute top-1 z-10 shadow-black drop-shadow-md">{opponent.deckName}</span>
+                              <span className={`text-4xl font-black z-10 drop-shadow-lg ${currentDmg >= 21 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{currentDmg}</span>
+
+                              {/* Small Helper Icons at bottom */}
+                              <div className="absolute bottom-1 w-full flex justify-between px-4 text-[10px] text-slate-400 font-bold pointer-events-none z-10 opacity-70">
+                                <span>-</span>
+                                <span>+</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            );
+          });
+        })()}
+      </div>
+
+      {/* Menu Modal */}
+      <Modal
+        isOpen={gameMenuOpen}
+        onClose={() => { setGameMenuOpen(false); setExitConfirmOpen(false); }}
+        title={exitConfirmOpen ? "Conferma Uscita" : "Menu"}
+      >
+        {exitConfirmOpen ? (
+          <div className="flex flex-col gap-4 text-center">
+            <p className="text-slate-300">La partita corrente verrà persa. Sei sicuro?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="secondary" onClick={() => setExitConfirmOpen(false)}>Annulla</Button>
+              <Button variant="danger" onClick={() => { setView('SETUP'); setGameMenuOpen(false); setExitConfirmOpen(false); setWinner(null); }}>Conferma Uscita</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <Button variant="secondary" onClick={() => { setGameLogOpen(true); setGameMenuOpen(false); }} className="w-full justify-center py-4 text-lg">
+              <History size={20} /> Log Partita Corrente
+            </Button>
+            <Button variant="danger" onClick={() => setExitConfirmOpen(true)} className="w-full justify-center py-4 text-lg">
+              <Home size={20} /> Torna alla Home
+            </Button>
+          </div>
+        )}
+      </Modal>
+
+      {/* Mana Overlay */}
+      {manaOverlayOpen && (
+        <div
+          className="absolute inset-0 z-[70] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-200 pointer-events-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setManaOverlayOpen(false); }}
+        >
+          <button onClick={() => setManaOverlayOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white"><X size={24} /></button>
+          <h2 className="text-2xl font-bold text-amber-400 mb-6 flex items-center gap-2"><Sparkles /> Gestione Mana - {gameState.players[gameState.activePlayerIndex]?.name}</h2>
+
+          <div className="grid grid-cols-3 gap-4 w-full max-w-md">
+            {MANA_TYPES.map(type => {
+              const activePlayer = gameState.players[gameState.activePlayerIndex];
+              if (!activePlayer) return null;
+              return (
+                <div key={type.key} className={`flex flex-col items-center justify-center p-4 rounded-xl border ${type.color} bg-opacity-20`}>
+                  <type.icon size={32} className="mb-2 opacity-80" />
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => updatePlayer(activePlayer.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: Math.max(0, p.mana[type.key] - 1) } }))}
+                      className="w-12 h-12 rounded-lg bg-black/40 font-bold text-xl flex items-center justify-center hover:bg-black/60 active:scale-95"
+                    >-</button>
+                    <span className="font-bold text-2xl w-8 text-center">{activePlayer.mana[type.key]}</span>
+                    <button
+                      onClick={() => updatePlayer(activePlayer.gameId, p => ({ ...p, mana: { ...p.mana, [type.key]: p.mana[type.key] + 1 } }))}
+                      className="w-12 h-12 rounded-lg bg-black/40 font-bold text-xl flex items-center justify-center hover:bg-black/60 active:scale-95"
+                    >+</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* In-Game Log Modal (UNCHANGED) */}
+      <Modal isOpen={gameLogOpen} onClose={() => setGameLogOpen(false)} title="Log Partita Corrente">
+        <div className="space-y-4">
+          {gameState.history.length === 0 ? (
+            <p className="text-center text-slate-500 italic py-8">Nessun evento registrato</p>
+          ) : (
+            [...gameState.history].reverse().map((log, idx) => {
+              const player = gameState.players.find(p => p.gameId === log.playerId);
+              if (!player) return null;
+              return (
+                <div key={idx} className="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600 flex items-center justify-center text-xs font-bold">
+                      T{log.turn}
+                    </div>
+                    <span className="font-bold text-slate-200">{player.name}</span>
+                  </div>
+                  <div className={`font-mono font-bold text-lg ${log.diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {log.diff > 0 ? `+${log.diff}` : log.diff}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </Modal>
+
+    </div>
+  );
 }
